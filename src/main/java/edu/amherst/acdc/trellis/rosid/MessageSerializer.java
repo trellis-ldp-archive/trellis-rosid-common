@@ -17,6 +17,7 @@ package edu.amherst.acdc.trellis.rosid;
 
 import static java.lang.String.join;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.Objects.nonNull;
 import static org.apache.jena.graph.Factory.createDefaultGraph;
 import static org.apache.jena.riot.Lang.NTRIPLES;
 import static org.apache.jena.riot.RDFDataMgr.read;
@@ -44,18 +45,30 @@ public class MessageSerializer implements Serializer<Message>, Deserializer<Mess
 
     @Override
     public byte[] serialize(final String topic, final Message data) {
-        final StringWriter writer = new StringWriter();
-        write(writer, rdf.asJenaGraph(data.getGraph()), NTRIPLES);
-        return join(",", data.getIdentifier().getIRIString(),
-                data.getModel().getIRIString(), writer.toString()).getBytes(UTF_8);
+        if (nonNull(data.getModel()) && nonNull(data.getGraph())) {
+            final StringWriter writer = new StringWriter();
+            write(writer, rdf.asJenaGraph(data.getGraph()), NTRIPLES);
+            return join(",", data.getIdentifier().getIRIString(),
+                    data.getModel().getIRIString(), writer.toString()).getBytes(UTF_8);
+        } else if (nonNull(data.getModel())) {
+            return join(",", data.getIdentifier().getIRIString(), data.getModel().getIRIString()).getBytes(UTF_8);
+        } else {
+            return data.getIdentifier().getIRIString().getBytes(UTF_8);
+        }
     }
 
     @Override
     public Message deserialize(final String topic, final byte[] data) {
         final String[] parts = new String(data, UTF_8).split(",", 3);
         final Graph graph = createDefaultGraph();
-        read(graph, new StringReader(parts[2]), null, NTRIPLES);
-        return new Message(rdf.createIRI(parts[0]), rdf.createIRI(parts[1]), rdf.asGraph(graph));
+        if (parts.length == 1) {
+            return new Message(rdf.createIRI(parts[0]), null, null);
+        } else if (parts.length == 2) {
+            return new Message(rdf.createIRI(parts[0]), rdf.createIRI(parts[1]), null);
+        } else {
+            read(graph, new StringReader(parts[2]), null, NTRIPLES);
+            return new Message(rdf.createIRI(parts[0]), rdf.createIRI(parts[1]), rdf.asGraph(graph));
+        }
     }
 
     @Override

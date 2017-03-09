@@ -42,7 +42,8 @@ import org.slf4j.Logger;
 public abstract class AbstractResourceService implements ResourceService, AutoCloseable {
 
     private static final Logger LOGGER = getLogger(AbstractResourceService.class);
-    private static final String OBJ_TOPIC = "trellis.put";
+    private static final String UPDATE_TOPIC = "trellis.update";
+    private static final String DELETE_TOPIC = "trellis.delete";
 
     protected final Producer<String, Message> producer;
 
@@ -83,7 +84,7 @@ public abstract class AbstractResourceService implements ResourceService, AutoCl
         try {
             final Message msg = new Message(identifier, type, graph);
             final RecordMetadata res = producer.send(
-                    new ProducerRecord<>(OBJ_TOPIC, identifier.getIRIString(), msg)).get();
+                    new ProducerRecord<>(UPDATE_TOPIC, identifier.getIRIString(), msg)).get();
             LOGGER.info("Sent record to topic: {} {}", res.topic(), res.timestamp());
             return true;
         } catch (final InterruptedException | ExecutionException ex) {
@@ -93,9 +94,18 @@ public abstract class AbstractResourceService implements ResourceService, AutoCl
     }
 
     @Override
-    public void delete(final Session session, final IRI identifier) {
-        // TODO
-        LOGGER.warn("delete() not implemented!");
+    public Boolean delete(final Session session, final IRI identifier) {
+        // TODO -- add/remove zk node
+        try {
+            final Message msg = new Message(identifier, null, null);
+            final RecordMetadata res = producer.send(
+                    new ProducerRecord<>(DELETE_TOPIC, identifier.getIRIString(), msg)).get();
+            LOGGER.info("Sent record to topic: {} {}", res.topic(), res.timestamp());
+            return true;
+        } catch (final InterruptedException | ExecutionException ex) {
+            LOGGER.error("Error sending record to kafka topic: {}", ex.getMessage());
+            return false;
+        }
     }
 
     @Override

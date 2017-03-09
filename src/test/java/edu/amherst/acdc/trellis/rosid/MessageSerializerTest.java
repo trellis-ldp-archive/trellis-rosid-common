@@ -17,6 +17,7 @@ package edu.amherst.acdc.trellis.rosid;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import edu.amherst.acdc.trellis.vocabulary.DC;
@@ -80,6 +81,37 @@ public class MessageSerializerTest {
         assertTrue(msg.getGraph().contains(description));
         assertTrue(msg.getGraph().contains(subject));
         assertEquals(3L, msg.getGraph().size());
+    }
 
+    @Test
+    public void testSimpleSerialization() {
+        final Message msg = new Message(identifier, null, null);
+        final String data = new String(serializer.serialize("topic", msg));
+        assertEquals("info:trellis/resource", data);
+    }
+
+    @Test
+    public void testSimpleDeserialization() {
+        final String data = "info:trellis/resource";
+        final Message msg = serializer.deserialize("topic", data.getBytes(UTF_8));
+        assertEquals(identifier, msg.getIdentifier());
+        assertNull(msg.getModel());
+        assertNull(msg.getGraph());
+    }
+
+    @Test
+    public void testSimpleSerialization2() {
+        final Message msg = new Message(identifier, LDP.Container, null);
+        final String data = new String(serializer.serialize("topic", msg));
+        assertEquals("info:trellis/resource,http://www.w3.org/ns/ldp#Container", data);
+    }
+
+    @Test
+    public void testSimpleDeserialization2() {
+        final String data = "info:trellis/resource,http://www.w3.org/ns/ldp#Container";
+        final Message msg = serializer.deserialize("topic", data.getBytes(UTF_8));
+        assertEquals(identifier, msg.getIdentifier());
+        assertEquals(LDP.Container, msg.getModel());
+        assertNull(msg.getGraph());
     }
 }
