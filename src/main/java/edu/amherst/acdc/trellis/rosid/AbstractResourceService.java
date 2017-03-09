@@ -95,33 +95,39 @@ public abstract class AbstractResourceService implements ResourceService, AutoCl
     @Override
     public void delete(final Session session, final IRI identifier) {
         // TODO
+        LOGGER.warn("delete() not implemented!");
     }
 
     @Override
     public void commit(final Session session) {
         // TODO
+        LOGGER.warn("commit() not implemented!");
     }
 
     @Override
     public void expire(final Session session) {
         // TODO
+        LOGGER.warn("expire() not implemented!");
     }
 
     @Override
     public Session begin() {
         // TODO
+        LOGGER.warn("begin() not implemented!");
         return null;
     }
 
     @Override
     public Optional<Session> resume(final IRI identifier) {
         // TODO
+        LOGGER.warn("resume() not implemented!");
         return empty();
     }
 
     @Override
     public Optional<Session> extend(final Session session, final Duration duration) {
         // TODO
+        LOGGER.warn("extend() not implemented!");
         return empty();
     }
 

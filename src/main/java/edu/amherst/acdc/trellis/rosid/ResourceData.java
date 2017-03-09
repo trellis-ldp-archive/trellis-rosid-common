@@ -47,7 +47,7 @@ public class ResourceData {
     /**
      * The datastream-specific data
      */
-    static class DatastreamData {
+    public static class DatastreamData {
         /**
          * The datastream identifier
          */
