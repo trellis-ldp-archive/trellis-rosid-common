@@ -242,7 +242,7 @@ checkstyle {
 
 sonarqube {
     properties {
-        property "sonar.projectName", "Trellis Repository (Rosid Commons) Implementation"
+        property "sonar.projectName", "Trellis Repository Rosid Implementation (Common)"
         property "sonar.projectKey", "edu.amherst.acdc:trellis-rosid"
         property "sonar.links.homepage", "https://github.com/trellis-ldp/trellis"
         property "sonar.links.issue", "https://github.com/trellis-ldp/trellis-rosid/issues"
