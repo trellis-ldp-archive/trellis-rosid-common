@@ -40,7 +40,7 @@ public class MessageSerializer implements Serializer<Message>, Deserializer<Mess
     private static final JenaRDF rdf = new JenaRDF();
 
     @Override
-    public void configure(final Map<String, ?> map, final boolean b) {
+    public void configure(final Map<String, ?> map, final boolean isKey) {
     }
 
     @Override
