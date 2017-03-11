@@ -18,17 +18,17 @@ package edu.amherst.acdc.trellis.rosid;
 import static java.lang.String.join;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.nonNull;
-import static org.apache.jena.graph.Factory.createDefaultGraph;
-import static org.apache.jena.riot.Lang.NTRIPLES;
+import static org.apache.jena.riot.Lang.NQUADS;
 import static org.apache.jena.riot.RDFDataMgr.read;
 import static org.apache.jena.riot.RDFDataMgr.write;
+import static org.apache.jena.sparql.core.DatasetGraphFactory.create;
 
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.util.Map;
 
 import org.apache.commons.rdf.jena.JenaRDF;
-import org.apache.jena.graph.Graph;
+import org.apache.jena.sparql.core.DatasetGraph;
 import org.apache.kafka.common.serialization.Deserializer;
 import org.apache.kafka.common.serialization.Serializer;
 
@@ -45,13 +45,12 @@ public class MessageSerializer implements Serializer<Message>, Deserializer<Mess
 
     @Override
     public byte[] serialize(final String topic, final Message data) {
-        if (nonNull(data.getModel()) && nonNull(data.getGraph())) {
+        if (nonNull(data.getDataset())) {
             final StringWriter writer = new StringWriter();
-            write(writer, rdf.asJenaGraph(data.getGraph()), NTRIPLES);
-            return join(",", data.getIdentifier().getIRIString(),
-                    data.getModel().getIRIString(), writer.toString()).getBytes(UTF_8);
-        } else if (nonNull(data.getModel())) {
-            return join(",", data.getIdentifier().getIRIString(), data.getModel().getIRIString()).getBytes(UTF_8);
+            final DatasetGraph dataset = create();
+            data.getDataset().stream().map(quad -> rdf.asJenaQuad(quad)).forEach(dataset::add);
+            write(writer, dataset, NQUADS);
+            return join(",", data.getIdentifier().getIRIString(), writer.toString()).getBytes(UTF_8);
         } else {
             return data.getIdentifier().getIRIString().getBytes(UTF_8);
         }
@@ -59,15 +58,13 @@ public class MessageSerializer implements Serializer<Message>, Deserializer<Mess
 
     @Override
     public Message deserialize(final String topic, final byte[] data) {
-        final String[] parts = new String(data, UTF_8).split(",", 3);
-        final Graph graph = createDefaultGraph();
+        final String[] parts = new String(data, UTF_8).split(",", 2);
+        final DatasetGraph dataset = create();
         if (parts.length == 1) {
-            return new Message(rdf.createIRI(parts[0]), null, null);
-        } else if (parts.length == 2) {
-            return new Message(rdf.createIRI(parts[0]), rdf.createIRI(parts[1]), null);
+            return new Message(rdf.createIRI(parts[0]), null);
         } else {
-            read(graph, new StringReader(parts[2]), null, NTRIPLES);
-            return new Message(rdf.createIRI(parts[0]), rdf.createIRI(parts[1]), rdf.asGraph(graph));
+            read(dataset, new StringReader(parts[1]), null, NQUADS);
+            return new Message(rdf.createIRI(parts[0]), rdf.asDataset(dataset));
         }
     }
 

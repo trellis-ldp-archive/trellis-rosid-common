@@ -15,6 +15,7 @@
  */
 package edu.amherst.acdc.trellis.rosid;
 
+import static edu.amherst.acdc.trellis.vocabulary.RDF.type;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -22,10 +23,11 @@ import static org.junit.Assert.assertTrue;
 
 import edu.amherst.acdc.trellis.vocabulary.DC;
 import edu.amherst.acdc.trellis.vocabulary.LDP;
+import edu.amherst.acdc.trellis.vocabulary.Trellis;
 
-import org.apache.commons.rdf.api.Graph;
+import org.apache.commons.rdf.api.Dataset;
 import org.apache.commons.rdf.api.IRI;
-import org.apache.commons.rdf.api.Triple;
+import org.apache.commons.rdf.api.Quad;
 import org.apache.commons.rdf.api.RDF;
 import org.apache.commons.rdf.jena.JenaRDF;
 import org.junit.Before;
@@ -40,52 +42,58 @@ public class MessageSerializerTest {
 
     private final MessageSerializer serializer = new MessageSerializer();
     private final IRI identifier = rdf.createIRI("info:trellis/resource");
-    private final Triple title = rdf.createTriple(identifier, DC.title, rdf.createLiteral("A title", "eng"));
-    private final Triple description = rdf.createTriple(identifier, DC.description,
+    private final Quad title = rdf.createQuad(Trellis.PreferUserManaged, identifier, DC.title,
+            rdf.createLiteral("A title", "eng"));
+    private final Quad description = rdf.createQuad(Trellis.PreferUserManaged, identifier, DC.description,
             rdf.createLiteral("A longer description", "eng"));
-    private final Triple subject = rdf.createTriple(identifier, DC.subject,
+    private final Quad subject = rdf.createQuad(Trellis.PreferUserManaged, identifier, DC.subject,
             rdf.createIRI("http://example.org/subject/1"));
+    private final Quad ixmodel = rdf.createQuad(Trellis.PreferServerManaged, identifier, type, LDP.Container);
 
-    private final Graph graph = rdf.createGraph();
+    private final Dataset dataset = rdf.createDataset();
 
     @Before
     public void setUp() {
-        graph.clear();
-        graph.add(title);
-        graph.add(description);
-        graph.add(subject);
+        dataset.clear();
+        dataset.add(title);
+        dataset.add(description);
+        dataset.add(subject);
     }
 
     @Test
     public void testSerialization() {
-        final Message msg = new Message(identifier, LDP.Container, graph);
+        final Message msg = new Message(identifier, dataset);
         final Message msg2 = serializer.deserialize("topic", serializer.serialize("topic", msg));
         assertEquals(identifier, msg2.getIdentifier());
-        assertEquals(LDP.Container, msg2.getModel());
-        assertTrue(msg2.getGraph().contains(title));
-        assertTrue(msg2.getGraph().contains(description));
-        assertTrue(msg2.getGraph().contains(subject));
-        assertEquals(3L, msg2.getGraph().size());
+        assertTrue(msg2.getDataset().contains(title));
+        assertTrue(msg2.getDataset().contains(description));
+        assertTrue(msg2.getDataset().contains(subject));
+        assertEquals(3L, msg2.getDataset().size());
     }
 
     @Test
     public void testDeserialization() {
-        final String data = "info:trellis/resource,http://www.w3.org/ns/ldp#Container," +
-            "<info:trellis/resource> <http://purl.org/dc/terms/title> \"A title\"@eng .\n" +
-            "<info:trellis/resource> <http://purl.org/dc/terms/description> \"A longer description\"@eng .\n" +
-            "<info:trellis/resource> <http://purl.org/dc/terms/subject> <http://example.org/subject/1> .\n";
+        final String data = "info:trellis/resource," +
+            "<info:trellis/resource> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> " +
+            "<http://www.w3.org/ns/ldp#Container> <http://acdc.amherst.edu/ns/trellis#PreferServerManaged> .\n" +
+            "<info:trellis/resource> <http://purl.org/dc/terms/title> " +
+            "\"A title\"@eng <http://acdc.amherst.edu/ns/trellis#PreferUserManaged> .\n" +
+            "<info:trellis/resource> <http://purl.org/dc/terms/description> " +
+            "\"A longer description\"@eng <http://acdc.amherst.edu/ns/trellis#PreferUserManaged> .\n" +
+            "<info:trellis/resource> <http://purl.org/dc/terms/subject> " +
+            "<http://example.org/subject/1> <http://acdc.amherst.edu/ns/trellis#PreferUserManaged> .\n";
         final Message msg = serializer.deserialize("topic", data.getBytes(UTF_8));
         assertEquals(identifier, msg.getIdentifier());
-        assertEquals(LDP.Container, msg.getModel());
-        assertTrue(msg.getGraph().contains(title));
-        assertTrue(msg.getGraph().contains(description));
-        assertTrue(msg.getGraph().contains(subject));
-        assertEquals(3L, msg.getGraph().size());
+        assertTrue(msg.getDataset().contains(title));
+        assertTrue(msg.getDataset().contains(description));
+        assertTrue(msg.getDataset().contains(subject));
+        assertTrue(msg.getDataset().contains(ixmodel));
+        assertEquals(4L, msg.getDataset().size());
     }
 
     @Test
     public void testSimpleSerialization() {
-        final Message msg = new Message(identifier, null, null);
+        final Message msg = new Message(identifier, null);
         final String data = new String(serializer.serialize("topic", msg));
         assertEquals("info:trellis/resource", data);
     }
@@ -95,23 +103,6 @@ public class MessageSerializerTest {
         final String data = "info:trellis/resource";
         final Message msg = serializer.deserialize("topic", data.getBytes(UTF_8));
         assertEquals(identifier, msg.getIdentifier());
-        assertNull(msg.getModel());
-        assertNull(msg.getGraph());
-    }
-
-    @Test
-    public void testSimpleSerialization2() {
-        final Message msg = new Message(identifier, LDP.Container, null);
-        final String data = new String(serializer.serialize("topic", msg));
-        assertEquals("info:trellis/resource,http://www.w3.org/ns/ldp#Container", data);
-    }
-
-    @Test
-    public void testSimpleDeserialization2() {
-        final String data = "info:trellis/resource,http://www.w3.org/ns/ldp#Container";
-        final Message msg = serializer.deserialize("topic", data.getBytes(UTF_8));
-        assertEquals(identifier, msg.getIdentifier());
-        assertEquals(LDP.Container, msg.getModel());
-        assertNull(msg.getGraph());
+        assertNull(msg.getDataset());
     }
 }

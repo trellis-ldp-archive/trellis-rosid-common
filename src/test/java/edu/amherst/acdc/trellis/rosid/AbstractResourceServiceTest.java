@@ -24,7 +24,6 @@ import edu.amherst.acdc.trellis.api.Resource;
 import edu.amherst.acdc.trellis.spi.EventService;
 import edu.amherst.acdc.trellis.spi.ResourceService;
 import edu.amherst.acdc.trellis.spi.Session;
-import edu.amherst.acdc.trellis.vocabulary.LDP;
 
 import java.time.Instant;
 import java.util.Optional;
@@ -79,7 +78,7 @@ public class AbstractResourceServiceTest {
         svc.bind(mockEventService);
         svc.unbind(mockEventService2);
         assertFalse(svc.exists(mockSession, identifier, time));
-        assertTrue(svc.put(mockSession, identifier, LDP.Container, rdf.createGraph()));
+        assertTrue(svc.put(mockSession, identifier, rdf.createDataset()));
         assertTrue(svc.delete(mockSession, identifier));
     }
 }

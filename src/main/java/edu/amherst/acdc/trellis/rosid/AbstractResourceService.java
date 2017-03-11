@@ -28,7 +28,7 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.ExecutionException;
 
-import org.apache.commons.rdf.api.Graph;
+import org.apache.commons.rdf.api.Dataset;
 import org.apache.commons.rdf.api.IRI;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
@@ -79,10 +79,10 @@ public abstract class AbstractResourceService implements ResourceService, AutoCl
     }
 
     @Override
-    public Boolean put(final Session session, final IRI identifier, final IRI type, final Graph graph) {
+    public Boolean put(final Session session, final IRI identifier, final Dataset dataset) {
         // TODO -- add/remove zk node
         try {
-            final Message msg = new Message(identifier, type, graph);
+            final Message msg = new Message(identifier, dataset);
             final RecordMetadata res = producer.send(
                     new ProducerRecord<>(UPDATE_TOPIC, identifier.getIRIString(), msg)).get();
             LOGGER.info("Sent record to topic: {} {}", res.topic(), res.timestamp());
@@ -97,7 +97,7 @@ public abstract class AbstractResourceService implements ResourceService, AutoCl
     public Boolean delete(final Session session, final IRI identifier) {
         // TODO -- add/remove zk node
         try {
-            final Message msg = new Message(identifier, null, null);
+            final Message msg = new Message(identifier, null);
             final RecordMetadata res = producer.send(
                     new ProducerRecord<>(DELETE_TOPIC, identifier.getIRIString(), msg)).get();
             LOGGER.info("Sent record to topic: {} {}", res.topic(), res.timestamp());

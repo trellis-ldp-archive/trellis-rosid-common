@@ -15,7 +15,7 @@
  */
 package edu.amherst.acdc.trellis.rosid;
 
-import org.apache.commons.rdf.api.Graph;
+import org.apache.commons.rdf.api.Dataset;
 import org.apache.commons.rdf.api.IRI;
 
 /**
@@ -25,20 +25,16 @@ public class Message {
 
     private final IRI identifier;
 
-    private final IRI model;
-
-    private final Graph graph;
+    private final Dataset dataset;
 
     /**
      * Create a Message object
      * @param identifier the identifier
-     * @param model the model
-     * @param graph the graph
+     * @param dataset the dataset
      */
-    public Message(final IRI identifier, final IRI model, final Graph graph) {
+    public Message(final IRI identifier, final Dataset dataset) {
         this.identifier = identifier;
-        this.model = model;
-        this.graph = graph;
+        this.dataset = dataset;
     }
 
     /**
@@ -50,18 +46,10 @@ public class Message {
     }
 
     /**
-     * Get the model
-     * @return the model
+     * Get the dataset
+     * @return the dataset
      */
-    public IRI getModel() {
-        return model;
-    }
-
-    /**
-     * Get the graph
-     * @return the graph
-     */
-    public Graph getGraph() {
-        return graph;
+    public Dataset getDataset() {
+        return dataset;
     }
 }
