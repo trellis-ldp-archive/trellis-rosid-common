@@ -59,12 +59,12 @@ public class ResourceDataTest {
         final ResourceData res = MAPPER.readValue(getClass().getResourceAsStream("/resource1.json"),
                 ResourceData.class);
 
-        assertEquals("info:trellisrepo/resource1", res.id);
+        assertEquals("trellis:repository/resource1", res.id);
         assertEquals(LDP.Container.getIRIString(), res.ldpType);
         assertTrue(res.userTypes.contains("http://example.org/ns/CustomType"));
-        assertEquals("info:trellisrepo/", res.containedBy);
+        assertEquals("trellis:repository/", res.containedBy);
         assertEquals("http://receiver.example.org/inbox", res.inbox);
-        assertEquals("info:trellisrepo/acl/public", res.accessControl);
+        assertEquals("trellis:repository/acl/public", res.accessControl);
         assertEquals(parse("2017-02-05T09:31:12Z"), res.created);
         assertEquals("file:/path/to/datastream", res.datastream.id);
         assertEquals("image/jpeg", res.datastream.format);
@@ -74,7 +74,7 @@ public class ResourceDataTest {
 
     @Test
     public void testRDFSource() {
-        final IRI identifier = rdf.createIRI("info:trellisrepo/resource");
+        final IRI identifier = rdf.createIRI("trellis:repository/resource");
         final IRI inbox = rdf.createIRI("http://example.com/receiver/inbox");
         final Instant time = now();
         final Literal created = rdf.createLiteral(time.toString(), XSD.dateTime);
@@ -97,7 +97,7 @@ public class ResourceDataTest {
 
     @Test
     public void testNonRDFSource() {
-        final IRI identifier = rdf.createIRI("info:trellisrepo/resource");
+        final IRI identifier = rdf.createIRI("trellis:repository/resource");
         final IRI datastream = rdf.createIRI("file://path/to/resource");
         final IRI inbox = rdf.createIRI("http://example.com/receiver/inbox");
         final Literal format = rdf.createLiteral("image/jpeg");

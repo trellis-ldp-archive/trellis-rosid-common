@@ -71,7 +71,7 @@ public class AbstractResourceServiceTest {
     @Test
     public void testResourceService() {
         final Instant time = parse("2017-02-16T11:15:03Z");
-        final IRI identifier = rdf.createIRI("info:trellisrepo/resource");
+        final IRI identifier = rdf.createIRI("trellis:repository/resource");
         final ResourceService svc = new MyResourceService();
         svc.bind(mockEventService);
         svc.unbind(mockEventService);
