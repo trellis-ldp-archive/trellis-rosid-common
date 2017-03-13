@@ -41,7 +41,7 @@ public class MessageSerializerTest {
     private static final RDF rdf = new JenaRDF();
 
     private final MessageSerializer serializer = new MessageSerializer();
-    private final IRI identifier = rdf.createIRI("info:trellis/resource");
+    private final IRI identifier = rdf.createIRI("info:trellisrepo/resource");
     private final Quad title = rdf.createQuad(Trellis.PreferUserManaged, identifier, DC.title,
             rdf.createLiteral("A title", "eng"));
     private final Quad description = rdf.createQuad(Trellis.PreferUserManaged, identifier, DC.description,
@@ -73,14 +73,14 @@ public class MessageSerializerTest {
 
     @Test
     public void testDeserialization() {
-        final String data = "info:trellis/resource," +
-            "<info:trellis/resource> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> " +
+        final String data = "info:trellisrepo/resource," +
+            "<info:trellisrepo/resource> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> " +
             "<http://www.w3.org/ns/ldp#Container> <http://acdc.amherst.edu/ns/trellis#PreferServerManaged> .\n" +
-            "<info:trellis/resource> <http://purl.org/dc/terms/title> " +
+            "<info:trellisrepo/resource> <http://purl.org/dc/terms/title> " +
             "\"A title\"@eng <http://acdc.amherst.edu/ns/trellis#PreferUserManaged> .\n" +
-            "<info:trellis/resource> <http://purl.org/dc/terms/description> " +
+            "<info:trellisrepo/resource> <http://purl.org/dc/terms/description> " +
             "\"A longer description\"@eng <http://acdc.amherst.edu/ns/trellis#PreferUserManaged> .\n" +
-            "<info:trellis/resource> <http://purl.org/dc/terms/subject> " +
+            "<info:trellisrepo/resource> <http://purl.org/dc/terms/subject> " +
             "<http://example.org/subject/1> <http://acdc.amherst.edu/ns/trellis#PreferUserManaged> .\n";
         final Message msg = serializer.deserialize("topic", data.getBytes(UTF_8));
         assertEquals(identifier, msg.getIdentifier());
@@ -95,12 +95,12 @@ public class MessageSerializerTest {
     public void testSimpleSerialization() {
         final Message msg = new Message(identifier, null);
         final String data = new String(serializer.serialize("topic", msg));
-        assertEquals("info:trellis/resource", data);
+        assertEquals("info:trellisrepo/resource", data);
     }
 
     @Test
     public void testSimpleDeserialization() {
-        final String data = "info:trellis/resource";
+        final String data = "info:trellisrepo/resource";
         final Message msg = serializer.deserialize("topic", data.getBytes(UTF_8));
         assertEquals(identifier, msg.getIdentifier());
         assertNull(msg.getDataset());
