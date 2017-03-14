@@ -100,7 +100,7 @@ jar {
         license project.license
 
         instruction 'Import-Package', '*'
-        instruction 'Export-Package', "edu.amherst.acdc.trellis.rosid;version=${projectOsgiVersion}"
+        instruction 'Export-Package', "edu.amherst.acdc.trellis.rosid.common;version=${projectOsgiVersion}"
     }
 }
 
@@ -206,9 +206,9 @@ uploadArchives {
             }
 
             scm {
-                connection 'scm:git:git://github.com/trellis-ldp/trellis-rosid.git'
-                developerConnection 'scm:git:git@github.com/trellis-ldp/trellis-rosid.git'
-                url 'https://github.com/trellis-ldp/trellis-rosid'
+                connection 'scm:git:git://github.com/trellis-ldp/trellis-rosid-common.git'
+                developerConnection 'scm:git:git@github.com/trellis-ldp/trellis-rosid-common.git'
+                url 'https://github.com/trellis-ldp/trellis-rosid-common'
                 tag 'HEAD'
             }
 
@@ -243,10 +243,10 @@ checkstyle {
 sonarqube {
     properties {
         property "sonar.projectName", "Trellis Repository Rosid Implementation (Common)"
-        property "sonar.projectKey", "edu.amherst.acdc:trellis-rosid"
+        property "sonar.projectKey", "edu.amherst.acdc:trellis-rosid-common"
         property "sonar.links.homepage", "https://github.com/trellis-ldp/trellis"
-        property "sonar.links.issue", "https://github.com/trellis-ldp/trellis-rosid/issues"
-        property "sonar.links.scm_dev", "scm:git:git@github.com:trellis-ldp/trellis-rosid.git"
+        property "sonar.links.issue", "https://github.com/trellis-ldp/trellis-rosid-common/issues"
+        property "sonar.links.scm_dev", "scm:git:git@github.com:trellis-ldp/trellis-rosid-common.git"
     }
 }
 

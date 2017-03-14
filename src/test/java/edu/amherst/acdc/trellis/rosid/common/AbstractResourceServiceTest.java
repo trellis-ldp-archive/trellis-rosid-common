@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.amherst.acdc.trellis.rosid;
+package edu.amherst.acdc.trellis.rosid.common;
 
 import static java.time.Instant.parse;
 import static java.util.Optional.empty;
