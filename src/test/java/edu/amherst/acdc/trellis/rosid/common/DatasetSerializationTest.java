@@ -18,7 +18,6 @@ package edu.amherst.acdc.trellis.rosid.common;
 import static edu.amherst.acdc.trellis.vocabulary.RDF.type;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import edu.amherst.acdc.trellis.vocabulary.DC;
@@ -36,11 +35,11 @@ import org.junit.Test;
 /**
  * @author acoburn
  */
-public class MessageSerializerTest {
+public class DatasetSerializationTest {
 
     private static final RDF rdf = new JenaRDF();
 
-    private final MessageSerializer serializer = new MessageSerializer();
+    private final DatasetSerialization serializer = new DatasetSerialization();
     private final IRI identifier = rdf.createIRI("trellis:repository/resource");
     private final Quad title = rdf.createQuad(Trellis.PreferUserManaged, identifier, DC.title,
             rdf.createLiteral("A title", "eng"));
@@ -62,18 +61,16 @@ public class MessageSerializerTest {
 
     @Test
     public void testSerialization() {
-        final Message msg = new Message(identifier, dataset);
-        final Message msg2 = serializer.deserialize("topic", serializer.serialize("topic", msg));
-        assertEquals(identifier, msg2.getIdentifier());
-        assertTrue(msg2.getDataset().contains(title));
-        assertTrue(msg2.getDataset().contains(description));
-        assertTrue(msg2.getDataset().contains(subject));
-        assertEquals(3L, msg2.getDataset().size());
+        final Dataset data = serializer.deserialize("topic", serializer.serialize("topic", dataset));
+        assertTrue(data.contains(title));
+        assertTrue(data.contains(description));
+        assertTrue(data.contains(subject));
+        assertEquals(3L, data.size());
     }
 
     @Test
     public void testDeserialization() {
-        final String data = "trellis:repository/resource," +
+        final String data = "" +
             "<trellis:repository/resource> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> " +
             "<http://www.w3.org/ns/ldp#Container> <http://acdc.amherst.edu/ns/trellis#PreferServerManaged> .\n" +
             "<trellis:repository/resource> <http://purl.org/dc/terms/title> " +
@@ -82,27 +79,23 @@ public class MessageSerializerTest {
             "\"A longer description\"@eng <http://acdc.amherst.edu/ns/trellis#PreferUserManaged> .\n" +
             "<trellis:repository/resource> <http://purl.org/dc/terms/subject> " +
             "<http://example.org/subject/1> <http://acdc.amherst.edu/ns/trellis#PreferUserManaged> .\n";
-        final Message msg = serializer.deserialize("topic", data.getBytes(UTF_8));
-        assertEquals(identifier, msg.getIdentifier());
-        assertTrue(msg.getDataset().contains(title));
-        assertTrue(msg.getDataset().contains(description));
-        assertTrue(msg.getDataset().contains(subject));
-        assertTrue(msg.getDataset().contains(ixmodel));
-        assertEquals(4L, msg.getDataset().size());
+        final Dataset msg = serializer.deserialize("topic", data.getBytes(UTF_8));
+        assertTrue(msg.contains(title));
+        assertTrue(msg.contains(description));
+        assertTrue(msg.contains(subject));
+        assertTrue(msg.contains(ixmodel));
+        assertEquals(4L, msg.size());
     }
 
     @Test
     public void testSimpleSerialization() {
-        final Message msg = new Message(identifier, null);
-        final String data = new String(serializer.serialize("topic", msg));
-        assertEquals("trellis:repository/resource", data);
+        assertEquals(0L, serializer.serialize("topic", null).length);
+        assertEquals(0L, serializer.serialize("topic", rdf.createDataset()).length);
     }
 
     @Test
     public void testSimpleDeserialization() {
-        final String data = "trellis:repository/resource";
-        final Message msg = serializer.deserialize("topic", data.getBytes(UTF_8));
-        assertEquals(identifier, msg.getIdentifier());
-        assertNull(msg.getDataset());
+        assertEquals(0L, serializer.deserialize("topic", null).size());
+        assertEquals(0L, serializer.deserialize("topic", new byte[0]).size());
     }
 }

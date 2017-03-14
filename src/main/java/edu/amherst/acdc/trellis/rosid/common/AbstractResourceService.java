@@ -15,12 +15,19 @@
  */
 package edu.amherst.acdc.trellis.rosid.common;
 
+import static edu.amherst.acdc.trellis.rosid.common.Constants.TOPIC_DELETE;
+import static edu.amherst.acdc.trellis.rosid.common.Constants.TOPIC_UPDATE;
+import static edu.amherst.acdc.trellis.vocabulary.RDF.type;
+import static java.time.Instant.now;
 import static java.util.Optional.empty;
 import static org.slf4j.LoggerFactory.getLogger;
 
 import edu.amherst.acdc.trellis.spi.EventService;
 import edu.amherst.acdc.trellis.spi.ResourceService;
 import edu.amherst.acdc.trellis.spi.Session;
+import edu.amherst.acdc.trellis.vocabulary.PROV;
+import edu.amherst.acdc.trellis.vocabulary.Trellis;
+import edu.amherst.acdc.trellis.vocabulary.XSD;
 
 import java.time.Duration;
 import java.util.Objects;
@@ -28,8 +35,11 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.ExecutionException;
 
+import org.apache.commons.rdf.api.BlankNode;
 import org.apache.commons.rdf.api.Dataset;
 import org.apache.commons.rdf.api.IRI;
+import org.apache.commons.rdf.api.RDF;
+import org.apache.commons.rdf.jena.JenaRDF;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -42,10 +52,10 @@ import org.slf4j.Logger;
 public abstract class AbstractResourceService implements ResourceService, AutoCloseable {
 
     private static final Logger LOGGER = getLogger(AbstractResourceService.class);
-    private static final String UPDATE_TOPIC = "trellis.update";
-    private static final String DELETE_TOPIC = "trellis.delete";
 
-    protected final Producer<String, Message> producer;
+    protected static final RDF rdf = new JenaRDF();
+
+    protected final Producer<String, Dataset> producer;
 
     protected EventService evtSvc;
 
@@ -60,7 +70,7 @@ public abstract class AbstractResourceService implements ResourceService, AutoCl
      * Create an AbstractResourceService with the given producer
      * @param producer the kafka producer
      */
-    public AbstractResourceService(final Producer<String, Message> producer) {
+    public AbstractResourceService(final Producer<String, Dataset> producer) {
         this.producer = producer;
     }
 
@@ -81,10 +91,20 @@ public abstract class AbstractResourceService implements ResourceService, AutoCl
     @Override
     public Boolean put(final Session session, final IRI identifier, final Dataset dataset) {
         // TODO -- add/remove zk node
+
+        // Add audit quads
+        final BlankNode bnode = rdf.createBlankNode();
+        dataset.add(rdf.createQuad(Trellis.PreferAudit, identifier, PROV.wasGeneratedBy, bnode));
+        dataset.add(rdf.createQuad(Trellis.PreferAudit, bnode, type, PROV.Activity));
+        dataset.add(rdf.createQuad(Trellis.PreferAudit, bnode, PROV.startedAtTime, rdf.createLiteral(now().toString(),
+                        XSD.dateTime)));
+        dataset.add(rdf.createQuad(Trellis.PreferAudit, bnode, PROV.wasAssociatedWith, session.getAgent()));
+        session.getDelegatedBy().ifPresent(delegate ->
+                dataset.add(rdf.createQuad(Trellis.PreferAudit, bnode, PROV.actedOnBehalfOf, delegate)));
+
         try {
-            final Message msg = new Message(identifier, dataset);
             final RecordMetadata res = producer.send(
-                    new ProducerRecord<>(UPDATE_TOPIC, identifier.getIRIString(), msg)).get();
+                    new ProducerRecord<>(TOPIC_UPDATE, identifier.getIRIString(), dataset)).get();
             LOGGER.info("Sent record to topic: {} {}", res.topic(), res.timestamp());
             return true;
         } catch (final InterruptedException | ExecutionException ex) {
@@ -97,9 +117,8 @@ public abstract class AbstractResourceService implements ResourceService, AutoCl
     public Boolean delete(final Session session, final IRI identifier) {
         // TODO -- add/remove zk node
         try {
-            final Message msg = new Message(identifier, null);
             final RecordMetadata res = producer.send(
-                    new ProducerRecord<>(DELETE_TOPIC, identifier.getIRIString(), msg)).get();
+                    new ProducerRecord<>(TOPIC_DELETE, identifier.getIRIString(), null)).get();
             LOGGER.info("Sent record to topic: {} {}", res.topic(), res.timestamp());
             return true;
         } catch (final InterruptedException | ExecutionException ex) {
@@ -156,7 +175,7 @@ public abstract class AbstractResourceService implements ResourceService, AutoCl
         props.put("linger.ms", System.getProperty("kafka.linger.ms", "1"));
         props.put("buffer.memory", System.getProperty("kafka.buffer.memory", "33554432"));
         props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
-        props.put("value.serializer", "edu.amherst.acdc.trellis.rosid.MessageSerializer");
+        props.put("value.serializer", "edu.amherst.acdc.trellis.rosid.common.DatasetSerializer");
         return props;
     }
 }

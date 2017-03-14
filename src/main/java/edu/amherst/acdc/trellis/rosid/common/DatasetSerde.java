@@ -15,41 +15,38 @@
  */
 package edu.amherst.acdc.trellis.rosid.common;
 
+import java.util.Map;
+
 import org.apache.commons.rdf.api.Dataset;
-import org.apache.commons.rdf.api.IRI;
+import org.apache.kafka.common.serialization.Deserializer;
+import org.apache.kafka.common.serialization.Serde;
+import org.apache.kafka.common.serialization.Serializer;
+
 
 /**
  * @author acoburn
  */
-public class Message {
+public class DatasetSerde implements Serde<Dataset> {
 
-    private final IRI identifier;
+    private final DatasetSerialization serde = new DatasetSerialization();
 
-    private final Dataset dataset;
-
-    /**
-     * Create a Message object
-     * @param identifier the identifier
-     * @param dataset the dataset
-     */
-    public Message(final IRI identifier, final Dataset dataset) {
-        this.identifier = identifier;
-        this.dataset = dataset;
+    @Override
+    public void configure(final Map<String, ?> map, final boolean isKey) {
+        serde.configure(map, isKey);
     }
 
-    /**
-     * Get the identifier
-     * @return the identifier
-     */
-    public IRI getIdentifier() {
-        return identifier;
+    @Override
+    public Serializer<Dataset> serializer() {
+        return serde;
     }
 
-    /**
-     * Get the dataset
-     * @return the dataset
-     */
-    public Dataset getDataset() {
-        return dataset;
+    @Override
+    public Deserializer<Dataset> deserializer() {
+        return serde;
+    }
+
+    @Override
+    public void close() {
+        serde.close();
     }
 }

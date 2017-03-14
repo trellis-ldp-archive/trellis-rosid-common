@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.apache.commons.rdf.api.Dataset;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -38,27 +39,27 @@ public class AbstractConsumerRunnerTest {
 
     public static class MyConsumerRunner extends AbstractConsumerRunner {
 
-        private CompletableFuture<ConsumerRecords<String, Message>> future;
+        private CompletableFuture<ConsumerRecords<String, Dataset>> future;
 
-        public MyConsumerRunner(final Collection<TopicPartition> topics, final Consumer<String, Message> consumer,
-                final CompletableFuture<ConsumerRecords<String, Message>> future) {
+        public MyConsumerRunner(final Collection<TopicPartition> topics, final Consumer<String, Dataset> consumer,
+                final CompletableFuture<ConsumerRecords<String, Dataset>> future) {
             super(topics, consumer);
             this.future = future;
         }
 
         @Override
-        protected void handleRecords(final ConsumerRecords<String, Message> records) {
+        protected void handleRecords(final ConsumerRecords<String, Dataset> records) {
             future.complete(records);
         }
     }
 
     @Test
     public void testConsumer() throws Exception {
-        final ConsumerRecord<String, Message> record = new ConsumerRecord<>("topic", 0, 0L, "key", null);
-        final CompletableFuture<ConsumerRecords<String, Message>> future = new CompletableFuture<>();
+        final ConsumerRecord<String, Dataset> record = new ConsumerRecord<>("topic", 0, 0L, "key", null);
+        final CompletableFuture<ConsumerRecords<String, Dataset>> future = new CompletableFuture<>();
         final TopicPartition topic = new TopicPartition("topic", 0);
         final AtomicBoolean val = new AtomicBoolean(false);
-        final MockConsumer<String, Message> consumer = new MockConsumer<>(EARLIEST);
+        final MockConsumer<String, Dataset> consumer = new MockConsumer<>(EARLIEST);
 
         consumer.updateBeginningOffsets(singletonMap(topic, 0L));
         consumer.schedulePollTask(() -> val.set(true));

@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.apache.commons.rdf.api.Dataset;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
@@ -39,7 +40,7 @@ abstract class AbstractConsumerRunner implements Runnable {
     private final long TIMEOUT = Long.parseLong(System.getProperty("kafka.poll.timeout.ms", "100"));
 
     protected final AtomicBoolean closed = new AtomicBoolean(false);
-    protected final Consumer<String, Message> consumer;
+    protected final Consumer<String, Dataset> consumer;
 
     /**
      * A base consumer runner class, using the system-defined Kafka Consumer
@@ -54,7 +55,7 @@ abstract class AbstractConsumerRunner implements Runnable {
      * @param consumer the kafka consumer to use
      */
     protected AbstractConsumerRunner(final Collection<TopicPartition> topics,
-            final Consumer<String, Message> consumer) {
+            final Consumer<String, Dataset> consumer) {
         requireNonNull(consumer, "the consumer may not be null!");
         consumer.assign(topics);
         this.consumer = consumer;
@@ -79,7 +80,7 @@ abstract class AbstractConsumerRunner implements Runnable {
      * Handle any retrieved records from the consumer
      * @param records the records
      */
-    abstract protected void handleRecords(final ConsumerRecords<String, Message> records);
+    abstract protected void handleRecords(final ConsumerRecords<String, Dataset> records);
 
     /**
      * Shutdown the consumer
@@ -98,7 +99,7 @@ abstract class AbstractConsumerRunner implements Runnable {
         props.put("auto.commit.interval.ms", System.getProperty("kafka.auto.commit.interval.ms", "1000"));
         props.put("session.timeout.ms", System.getProperty("kafka.session.timeout.ms", "30000"));
         props.put("key.deserializer", "org.apache.kafka.common.serialization.StringSerializer");
-        props.put("value.deserializer", "edu.amherst.acdc.trellis.rosid.MessageSerializer");
+        props.put("value.deserializer", "edu.amherst.acdc.trellis.rosid.common.DatasetSerializer");
         return props;
     }
 }
