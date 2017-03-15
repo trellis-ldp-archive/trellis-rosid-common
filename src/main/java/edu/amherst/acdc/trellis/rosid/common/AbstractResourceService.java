@@ -39,7 +39,6 @@ import org.apache.commons.rdf.api.BlankNode;
 import org.apache.commons.rdf.api.Dataset;
 import org.apache.commons.rdf.api.IRI;
 import org.apache.commons.rdf.api.RDF;
-import org.apache.commons.rdf.jena.JenaRDF;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -52,8 +51,6 @@ import org.slf4j.Logger;
 public abstract class AbstractResourceService implements ResourceService, AutoCloseable {
 
     private static final Logger LOGGER = getLogger(AbstractResourceService.class);
-
-    protected static final RDF rdf = new JenaRDF();
 
     protected final Producer<String, Dataset> producer;
 
@@ -93,6 +90,7 @@ public abstract class AbstractResourceService implements ResourceService, AutoCl
         // TODO -- add/remove zk node
 
         // Add audit quads
+        final RDF rdf = RDFUtils.getInstance();
         final BlankNode bnode = rdf.createBlankNode();
         dataset.add(rdf.createQuad(Trellis.PreferAudit, identifier, PROV.wasGeneratedBy, bnode));
         dataset.add(rdf.createQuad(Trellis.PreferAudit, bnode, type, PROV.Activity));
