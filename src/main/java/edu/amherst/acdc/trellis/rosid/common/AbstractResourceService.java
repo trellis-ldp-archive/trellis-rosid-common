@@ -114,9 +114,22 @@ public abstract class AbstractResourceService implements ResourceService, AutoCl
     @Override
     public Boolean delete(final Session session, final IRI identifier) {
         // TODO -- add/remove zk node
+
+        // Add audit quads
+        final RDF rdf = RDFUtils.getInstance();
+        final Dataset dataset = rdf.createDataset();
+        final BlankNode bnode = rdf.createBlankNode();
+        dataset.add(rdf.createQuad(Trellis.PreferAudit, identifier, PROV.wasGeneratedBy, bnode));
+        dataset.add(rdf.createQuad(Trellis.PreferAudit, bnode, type, PROV.Activity));
+        dataset.add(rdf.createQuad(Trellis.PreferAudit, bnode, PROV.startedAtTime, rdf.createLiteral(now().toString(),
+                        XSD.dateTime)));
+        dataset.add(rdf.createQuad(Trellis.PreferAudit, bnode, PROV.wasAssociatedWith, session.getAgent()));
+        session.getDelegatedBy().ifPresent(delegate ->
+                dataset.add(rdf.createQuad(Trellis.PreferAudit, bnode, PROV.actedOnBehalfOf, delegate)));
+
         try {
             final RecordMetadata res = producer.send(
-                    new ProducerRecord<>(TOPIC_DELETE, identifier.getIRIString(), null)).get();
+                    new ProducerRecord<>(TOPIC_DELETE, identifier.getIRIString(), dataset)).get();
             LOGGER.info("Sent record to topic: {} {}", res.topic(), res.timestamp());
             return true;
         } catch (final InterruptedException | ExecutionException ex) {
