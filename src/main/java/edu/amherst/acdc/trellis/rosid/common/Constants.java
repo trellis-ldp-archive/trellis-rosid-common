@@ -31,6 +31,16 @@ public final class Constants {
     public static final String TOPIC_EVENT = "trellis.event";
 
     /**
+     * The topic that notifies about inbound reference additions
+     */
+    public static final String TOPIC_INBOUND_ADD = "trellis.inbound.add";
+
+    /**
+     * The topic that notifies about inbound reference deletions
+     */
+    public static final String TOPIC_INBOUND_DELETE = "trellis.inbound.delete";
+
+    /**
      * The topic that is used to add LDP container triples
      */
     public static final String TOPIC_LDP_CONTAINER_ADD = "trellis.ldpcontainer.add";
