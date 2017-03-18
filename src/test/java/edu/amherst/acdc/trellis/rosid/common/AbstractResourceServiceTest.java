@@ -61,12 +61,12 @@ public class AbstractResourceServiceTest {
         }
 
         @Override
-        public Optional<Resource> get(final Session session, final IRI identifier) {
+        public Optional<Resource> get(final IRI identifier) {
             return empty();
         }
 
         @Override
-        public Optional<Resource> get(final Session session, final IRI identifier, final Instant time) {
+        public Optional<Resource> get(final IRI identifier, final Instant time) {
             return empty();
         }
     }
@@ -86,7 +86,7 @@ public class AbstractResourceServiceTest {
         svc.unbind(mockEventService);
         svc.bind(mockEventService);
         svc.unbind(mockEventService2);
-        assertFalse(svc.exists(mockSession, identifier, time));
+        assertFalse(svc.exists(identifier, time));
         assertTrue(svc.put(mockSession, identifier, rdf.createDataset()));
         assertTrue(svc.delete(mockSession, identifier));
     }
