@@ -19,7 +19,6 @@ import static edu.amherst.acdc.trellis.rosid.common.Constants.TOPIC_DELETE;
 import static edu.amherst.acdc.trellis.rosid.common.Constants.TOPIC_UPDATE;
 import static edu.amherst.acdc.trellis.vocabulary.RDF.type;
 import static java.time.Instant.now;
-import static java.util.Optional.empty;
 import static org.slf4j.LoggerFactory.getLogger;
 
 import edu.amherst.acdc.trellis.spi.EventService;
@@ -29,9 +28,7 @@ import edu.amherst.acdc.trellis.vocabulary.PROV;
 import edu.amherst.acdc.trellis.vocabulary.Trellis;
 import edu.amherst.acdc.trellis.vocabulary.XSD;
 
-import java.time.Duration;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.ExecutionException;
 
@@ -136,39 +133,6 @@ public abstract class AbstractResourceService implements ResourceService, AutoCl
             LOGGER.error("Error sending record to kafka topic: {}", ex.getMessage());
             return false;
         }
-    }
-
-    @Override
-    public void commit(final Session session) {
-        // TODO
-        LOGGER.warn("commit() not implemented!");
-    }
-
-    @Override
-    public void expire(final Session session) {
-        // TODO
-        LOGGER.warn("expire() not implemented!");
-    }
-
-    @Override
-    public Session begin() {
-        // TODO
-        LOGGER.warn("begin() not implemented!");
-        return null;
-    }
-
-    @Override
-    public Optional<Session> resume(final IRI identifier) {
-        // TODO
-        LOGGER.warn("resume() not implemented!");
-        return empty();
-    }
-
-    @Override
-    public Optional<Session> extend(final Session session, final Duration duration) {
-        // TODO
-        LOGGER.warn("extend() not implemented!");
-        return empty();
     }
 
     @Override
