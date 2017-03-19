@@ -88,6 +88,5 @@ public class AbstractResourceServiceTest {
         svc.unbind(mockEventService2);
         assertFalse(svc.exists(identifier, time));
         assertTrue(svc.put(mockSession, identifier, rdf.createDataset()));
-        assertTrue(svc.delete(mockSession, identifier));
     }
 }

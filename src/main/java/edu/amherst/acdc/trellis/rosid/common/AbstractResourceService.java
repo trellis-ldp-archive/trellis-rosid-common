@@ -15,7 +15,6 @@
  */
 package edu.amherst.acdc.trellis.rosid.common;
 
-import static edu.amherst.acdc.trellis.rosid.common.Constants.TOPIC_DELETE;
 import static edu.amherst.acdc.trellis.rosid.common.Constants.TOPIC_UPDATE;
 import static edu.amherst.acdc.trellis.vocabulary.RDF.type;
 import static java.time.Instant.now;
@@ -86,7 +85,7 @@ public abstract class AbstractResourceService implements ResourceService, AutoCl
     public Boolean put(final Session session, final IRI identifier, final Dataset dataset) {
         // TODO -- add/remove zk node
 
-        // Add audit quads
+        // Add audit quads -- MOVE this to the HTTP layer // Add AS Create/Update/Delete type
         final RDF rdf = RDFUtils.getInstance();
         final BlankNode bnode = rdf.createBlankNode();
         dataset.add(rdf.createQuad(Trellis.PreferAudit, identifier, PROV.wasGeneratedBy, bnode));
@@ -100,33 +99,6 @@ public abstract class AbstractResourceService implements ResourceService, AutoCl
         try {
             final RecordMetadata res = producer.send(
                     new ProducerRecord<>(TOPIC_UPDATE, identifier.getIRIString(), dataset)).get();
-            LOGGER.info("Sent record to topic: {} {}", res.topic(), res.timestamp());
-            return true;
-        } catch (final InterruptedException | ExecutionException ex) {
-            LOGGER.error("Error sending record to kafka topic: {}", ex.getMessage());
-            return false;
-        }
-    }
-
-    @Override
-    public Boolean delete(final Session session, final IRI identifier) {
-        // TODO -- add/remove zk node
-
-        // Add audit quads
-        final RDF rdf = RDFUtils.getInstance();
-        final Dataset dataset = rdf.createDataset();
-        final BlankNode bnode = rdf.createBlankNode();
-        dataset.add(rdf.createQuad(Trellis.PreferAudit, identifier, PROV.wasGeneratedBy, bnode));
-        dataset.add(rdf.createQuad(Trellis.PreferAudit, bnode, type, PROV.Activity));
-        dataset.add(rdf.createQuad(Trellis.PreferAudit, bnode, PROV.startedAtTime, rdf.createLiteral(now().toString(),
-                        XSD.dateTime)));
-        dataset.add(rdf.createQuad(Trellis.PreferAudit, bnode, PROV.wasAssociatedWith, session.getAgent()));
-        session.getDelegatedBy().ifPresent(delegate ->
-                dataset.add(rdf.createQuad(Trellis.PreferAudit, bnode, PROV.actedOnBehalfOf, delegate)));
-
-        try {
-            final RecordMetadata res = producer.send(
-                    new ProducerRecord<>(TOPIC_DELETE, identifier.getIRIString(), dataset)).get();
             LOGGER.info("Sent record to topic: {} {}", res.topic(), res.timestamp());
             return true;
         } catch (final InterruptedException | ExecutionException ex) {
