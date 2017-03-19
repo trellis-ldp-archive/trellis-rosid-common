@@ -17,15 +17,12 @@ package edu.amherst.acdc.trellis.rosid.common;
 
 import static java.time.Instant.parse;
 import static java.util.Optional.empty;
-import static java.util.Optional.of;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.when;
 
 import edu.amherst.acdc.trellis.api.Resource;
 import edu.amherst.acdc.trellis.spi.EventService;
 import edu.amherst.acdc.trellis.spi.ResourceService;
-import edu.amherst.acdc.trellis.spi.Session;
 
 import java.time.Instant;
 import java.util.Optional;
@@ -35,7 +32,6 @@ import org.apache.commons.rdf.api.RDF;
 import org.apache.commons.rdf.jena.JenaRDF;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.apache.kafka.clients.producer.MockProducer;
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
@@ -48,9 +44,6 @@ import org.mockito.runners.MockitoJUnitRunner;
 public class AbstractResourceServiceTest {
 
     private static final RDF rdf = new JenaRDF();
-
-    @Mock
-    private Session mockSession;
 
     @Mock
     private EventService mockEventService, mockEventService2;
@@ -71,12 +64,6 @@ public class AbstractResourceServiceTest {
         }
     }
 
-    @Before
-    public void setUp() {
-        when(mockSession.getAgent()).thenReturn(rdf.createIRI("trellis:user/1"));
-        when(mockSession.getDelegatedBy()).thenReturn(of(rdf.createIRI("trellis:user/2")));
-    }
-
     @Test
     public void testResourceService() {
         final Instant time = parse("2017-02-16T11:15:03Z");
@@ -87,6 +74,6 @@ public class AbstractResourceServiceTest {
         svc.bind(mockEventService);
         svc.unbind(mockEventService2);
         assertFalse(svc.exists(identifier, time));
-        assertTrue(svc.put(mockSession, identifier, rdf.createDataset()));
+        assertTrue(svc.put(identifier, rdf.createDataset()));
     }
 }

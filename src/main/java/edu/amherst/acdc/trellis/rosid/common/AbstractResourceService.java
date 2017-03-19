@@ -16,25 +16,17 @@
 package edu.amherst.acdc.trellis.rosid.common;
 
 import static edu.amherst.acdc.trellis.rosid.common.Constants.TOPIC_UPDATE;
-import static edu.amherst.acdc.trellis.vocabulary.RDF.type;
-import static java.time.Instant.now;
 import static org.slf4j.LoggerFactory.getLogger;
 
 import edu.amherst.acdc.trellis.spi.EventService;
 import edu.amherst.acdc.trellis.spi.ResourceService;
-import edu.amherst.acdc.trellis.spi.Session;
-import edu.amherst.acdc.trellis.vocabulary.PROV;
-import edu.amherst.acdc.trellis.vocabulary.Trellis;
-import edu.amherst.acdc.trellis.vocabulary.XSD;
 
 import java.util.Objects;
 import java.util.Properties;
 import java.util.concurrent.ExecutionException;
 
-import org.apache.commons.rdf.api.BlankNode;
 import org.apache.commons.rdf.api.Dataset;
 import org.apache.commons.rdf.api.IRI;
-import org.apache.commons.rdf.api.RDF;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -82,19 +74,20 @@ public abstract class AbstractResourceService implements ResourceService, AutoCl
     }
 
     @Override
-    public Boolean put(final Session session, final IRI identifier, final Dataset dataset) {
+    public Boolean put(final IRI identifier, final Dataset dataset) {
         // TODO -- add/remove zk node
 
         // Add audit quads -- MOVE this to the HTTP layer // Add AS Create/Update/Delete type
-        final RDF rdf = RDFUtils.getInstance();
-        final BlankNode bnode = rdf.createBlankNode();
-        dataset.add(rdf.createQuad(Trellis.PreferAudit, identifier, PROV.wasGeneratedBy, bnode));
-        dataset.add(rdf.createQuad(Trellis.PreferAudit, bnode, type, PROV.Activity));
-        dataset.add(rdf.createQuad(Trellis.PreferAudit, bnode, PROV.startedAtTime, rdf.createLiteral(now().toString(),
-                        XSD.dateTime)));
-        dataset.add(rdf.createQuad(Trellis.PreferAudit, bnode, PROV.wasAssociatedWith, session.getAgent()));
-        session.getDelegatedBy().ifPresent(delegate ->
-                dataset.add(rdf.createQuad(Trellis.PreferAudit, bnode, PROV.actedOnBehalfOf, delegate)));
+        //          // remove session from method signature
+        //final RDF rdf = RDFUtils.getInstance();
+        //final BlankNode bnode = rdf.createBlankNode();
+        //dataset.add(rdf.createQuad(Trellis.PreferAudit, identifier, PROV.wasGeneratedBy, bnode));
+        //dataset.add(rdf.createQuad(Trellis.PreferAudit, bnode, type, PROV.Activity));
+        //dataset.add(rdf.createQuad(Trellis.PreferAudit, bnode, PROV.startedAtTime, rdf.createLiteral(now().toString(),
+                        //XSD.dateTime)));
+        //dataset.add(rdf.createQuad(Trellis.PreferAudit, bnode, PROV.wasAssociatedWith, session.getAgent()));
+        //session.getDelegatedBy().ifPresent(delegate ->
+                //dataset.add(rdf.createQuad(Trellis.PreferAudit, bnode, PROV.actedOnBehalfOf, delegate)));
 
         try {
             final RecordMetadata res = producer.send(
