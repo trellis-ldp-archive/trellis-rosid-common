@@ -62,7 +62,6 @@ public class ResourceDataTest {
         assertEquals("trellis:repository/resource1", res.id);
         assertEquals(LDP.Container.getIRIString(), res.ldpType);
         assertTrue(res.userTypes.contains("http://example.org/ns/CustomType"));
-        assertEquals("trellis:repository/", res.containedBy);
         assertEquals("http://receiver.example.org/inbox", res.inbox);
         assertEquals("trellis:repository/acl/public", res.accessControl);
         assertEquals(parse("2017-02-05T09:31:12Z"), res.created);

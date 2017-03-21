@@ -2,7 +2,6 @@
     "@context" : "http://acdc.amherst.edu/ns/trellisresource" ,
     "@id" : "trellis:repository/resource1" ,
     "@type" : "http://www.w3.org/ns/ldp#Container" ,
-    "containedBy" : "trellis:repository/" ,
     "datastream" : {
         "@id" : "file:/path/to/datastream" ,
         "format" : "image/jpeg" ,

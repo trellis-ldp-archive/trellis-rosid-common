@@ -100,11 +100,6 @@ public class ResourceData {
     public List<String> userTypes;
 
     /**
-     * The resource that contains this resource, if any
-     */
-    public String containedBy;
-
-    /**
      * The datastream data, if available
      */
     public DatastreamData datastream;
@@ -187,9 +182,6 @@ public class ResourceData {
 
             graph.stream(identifier, RDF.type, null).findFirst().map(objectUriAsString)
                 .ifPresent(type -> rd.ldpType = type);
-
-            graph.stream(identifier, Trellis.containedBy, null).findFirst().map(objectUriAsString)
-                .ifPresent(res -> rd.containedBy = res);
 
             graph.stream(identifier, DC.creator, null).findFirst().map(objectUriAsString)
                 .ifPresent(agent -> rd.creator = agent);
