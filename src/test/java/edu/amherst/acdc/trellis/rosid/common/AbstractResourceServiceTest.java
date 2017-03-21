@@ -26,8 +26,10 @@ import edu.amherst.acdc.trellis.spi.ResourceService;
 
 import java.time.Instant;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 import org.apache.commons.rdf.api.IRI;
+import org.apache.commons.rdf.api.Quad;
 import org.apache.commons.rdf.api.RDF;
 import org.apache.commons.rdf.jena.JenaRDF;
 import org.apache.kafka.common.serialization.StringSerializer;
@@ -61,6 +63,12 @@ public class AbstractResourceServiceTest {
         @Override
         public Optional<Resource> get(final IRI identifier, final Instant time) {
             return empty();
+        }
+
+        @Override
+        public Boolean write(final IRI identifier, final Stream<? extends Quad> delete,
+                final Stream<? extends Quad> add, final Instant time) {
+            return true;
         }
     }
 

@@ -15,9 +15,24 @@
  */
 package edu.amherst.acdc.trellis.rosid.common;
 
-import java.util.ServiceLoader;
+import static edu.amherst.acdc.trellis.vocabulary.PROV.endedAtTime;
+import static edu.amherst.acdc.trellis.vocabulary.PROV.wasGeneratedBy;
+import static edu.amherst.acdc.trellis.vocabulary.Trellis.PreferAudit;
+import static edu.amherst.acdc.trellis.vocabulary.XSD.dateTime;
+import static java.util.Optional.of;
 
+import java.time.Instant;
+import java.util.Optional;
+import java.util.ServiceLoader;
+import java.util.function.Predicate;
+import java.util.stream.Stream;
+
+import org.apache.commons.rdf.api.BlankNodeOrIRI;
+import org.apache.commons.rdf.api.Dataset;
+import org.apache.commons.rdf.api.IRI;
+import org.apache.commons.rdf.api.Quad;
 import org.apache.commons.rdf.api.RDF;
+import org.apache.commons.rdf.api.Triple;
 
 /**
  * @author acoburn
@@ -32,6 +47,73 @@ public final class RDFUtils {
      */
     public static RDF getInstance() {
         return rdf;
+    }
+
+    /**
+     * Get the PROV.endedAtTime quad, wrapped in a Stream
+     * @param identifier the identifier
+     * @param dataset the dataset
+     * @param time the time
+     * @return the quad
+     */
+    public static Stream<Quad> endedAtQuad(final IRI identifier, final Dataset dataset, final Instant time) {
+        return dataset.stream(of(PreferAudit), identifier, wasGeneratedBy, null)
+            .map(Quad::getObject).filter(term -> term instanceof BlankNodeOrIRI)
+            .map(term -> (BlankNodeOrIRI) term)
+            .map(term -> rdf.createQuad(PreferAudit, term, endedAtTime,
+                    rdf.createLiteral(time.toString(), dateTime))).limit(1);
+    }
+
+    /**
+     * A predicate that returns true if the object of the provided triple is an IRI
+     */
+    public static final Predicate<Triple> hasObjectIRI = triple -> triple.getObject() instanceof IRI;
+
+    /**
+     * A predicate that returns true if the subject of the provided triple is an IRI
+     */
+    public static final Predicate<Triple> hasSubjectIRI = triple -> triple.getSubject() instanceof IRI;
+
+    /**
+     * A predicate that returns whether the object of the triple is in the repository domain
+     * @param domain the domain
+     * @return a predicate that returns true if the object of the triple is in the repository domain
+     */
+    public static Predicate<Triple> inDomain(final String domain) {
+        return hasObjectIRI.and(triple -> ((IRI) triple.getObject()).getIRIString().split("/", 2)[0].equals(domain));
+    }
+
+    /**
+     * A predicate to determine if the object of the triple is equivalent to the provided IRI
+     * @param identifier the identifier
+     * @return a predicate that returns true if the object is equivalent to the same resource
+     */
+    public static Predicate<Triple> objectIsSameResource(final IRI identifier) {
+        return hasObjectIRI.and(triple -> ((IRI) triple.getObject()).getIRIString().split("#", 2)[0]
+                    .equals(identifier.getIRIString()));
+    }
+
+
+    /**
+     * A predicate to determine if the subject of the triple is equivalent to the provided IRI
+     * @param identifier the identifier
+     * @return a predicate that returns true if the subject is equivalent to the same resource
+     */
+    public static Predicate<Triple> subjectIsSameResource(final IRI identifier) {
+        return hasSubjectIRI.and(triple -> ((IRI) triple.getSubject()).getIRIString().split("#", 2)[0]
+                    .equals(identifier.getIRIString()));
+    }
+
+    /**
+     * Get the IRI of the parent resource, if it exists
+     * @param identifier the identifier
+     * @return the parent if it exists
+     */
+    public static Optional<String> getParent(final String identifier) {
+        if (identifier.endsWith("/")) {
+            return getParent(identifier.substring(0, identifier.length() - 1));
+        }
+        return of(identifier.lastIndexOf('/')).filter(idx -> idx > 0).map(idx -> identifier.substring(0, idx));
     }
 
     private RDFUtils() {
