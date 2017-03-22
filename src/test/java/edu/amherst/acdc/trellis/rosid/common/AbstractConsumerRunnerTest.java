@@ -17,6 +17,7 @@ package edu.amherst.acdc.trellis.rosid.common;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonMap;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.kafka.clients.consumer.OffsetResetStrategy.EARLIEST;
 import static org.junit.Assert.assertTrue;
 
@@ -69,7 +70,7 @@ public class AbstractConsumerRunnerTest {
 
         consumer.addRecord(record);
 
-        assertTrue(future.get().records(topic).contains(record));
+        assertTrue(future.get(10L, SECONDS).records(topic).contains(record));
         assertTrue(val.get());
 
         runner.shutdown();

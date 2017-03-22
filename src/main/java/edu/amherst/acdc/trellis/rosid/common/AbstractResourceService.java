@@ -15,10 +15,13 @@
  */
 package edu.amherst.acdc.trellis.rosid.common;
 
+import static edu.amherst.acdc.trellis.rosid.common.Constants.TOPIC_CACHE;
 import static edu.amherst.acdc.trellis.rosid.common.Constants.TOPIC_INBOUND_ADD;
 import static edu.amherst.acdc.trellis.rosid.common.Constants.TOPIC_INBOUND_DELETE;
 import static edu.amherst.acdc.trellis.rosid.common.Constants.TOPIC_LDP_CONTAINER_ADD;
 import static edu.amherst.acdc.trellis.rosid.common.Constants.TOPIC_LDP_CONTAINER_DELETE;
+import static edu.amherst.acdc.trellis.rosid.common.Constants.TOPIC_LDP_MEMBERSHIP_ADD;
+import static edu.amherst.acdc.trellis.rosid.common.Constants.TOPIC_LDP_MEMBERSHIP_DELETE;
 import static edu.amherst.acdc.trellis.rosid.common.RDFUtils.endedAtQuad;
 import static edu.amherst.acdc.trellis.rosid.common.RDFUtils.getInstance;
 import static edu.amherst.acdc.trellis.rosid.common.RDFUtils.getParent;
@@ -28,6 +31,8 @@ import static edu.amherst.acdc.trellis.rosid.common.RDFUtils.subjectIsSameResour
 import static edu.amherst.acdc.trellis.vocabulary.AS.Create;
 import static edu.amherst.acdc.trellis.vocabulary.AS.Delete;
 import static edu.amherst.acdc.trellis.vocabulary.Fedora.PreferInboundReferences;
+import static edu.amherst.acdc.trellis.vocabulary.LDP.PreferContainment;
+import static edu.amherst.acdc.trellis.vocabulary.LDP.contains;
 import static edu.amherst.acdc.trellis.vocabulary.RDF.type;
 import static edu.amherst.acdc.trellis.vocabulary.Trellis.PreferAudit;
 import static edu.amherst.acdc.trellis.vocabulary.Trellis.PreferServerManaged;
@@ -170,7 +175,7 @@ public abstract class AbstractResourceService implements ResourceService, AutoCl
         try {
             final List<Future<RecordMetadata>> results = new ArrayList<>();
 
-            // TODO re-cache (immediate, not windowed)
+            results.add(producer.send(new ProducerRecord<>(TOPIC_CACHE, identifier.getIRIString(), dataset)));
 
             // Handle the addition of any in-domain outbound triples
             adding.getGraph(PreferUserManaged).map(g -> g.stream().filter(subjectIsSameResource(identifier))
@@ -194,14 +199,17 @@ public abstract class AbstractResourceService implements ResourceService, AutoCl
                     results.add(producer.send(new ProducerRecord<>(TOPIC_INBOUND_DELETE, e.getKey(), data)));
                 });
 
-            // Update the containment triples of the parent resource if this is a delete operation
-            existingRes.flatMap(Resource::getContainedBy).filter(x -> isDelete).ifPresent(container ->
-                results.add(producer.send(new ProducerRecord<>(TOPIC_LDP_CONTAINER_DELETE,
-                                container.getIRIString(), dataset))));
-
-            // Update the containment triples of the parent resource if this is a create operation
-            getParent(identifier.getIRIString()).filter(x -> isCreate).ifPresent(container ->
-                results.add(producer.send(new ProducerRecord<>(TOPIC_LDP_CONTAINER_ADD, container, dataset))));
+            // Update the containment triples of the parent resource if this is a delete or create operation
+            getParent(identifier.getIRIString()).ifPresent(container -> {
+                dataset.add(rdf.createQuad(PreferContainment, rdf.createIRI(container), contains, identifier));
+                if (isDelete) {
+                    results.add(producer.send(new ProducerRecord<>(TOPIC_LDP_CONTAINER_DELETE, container, dataset)));
+                    results.add(producer.send(new ProducerRecord<>(TOPIC_LDP_MEMBERSHIP_DELETE, container, dataset)));
+                } else if (isCreate) {
+                    results.add(producer.send(new ProducerRecord<>(TOPIC_LDP_CONTAINER_ADD, container, dataset)));
+                    results.add(producer.send(new ProducerRecord<>(TOPIC_LDP_MEMBERSHIP_ADD, container, dataset)));
+                }
+            });
 
             for (final Future<RecordMetadata> result : results) {
                 final RecordMetadata res = result.get();

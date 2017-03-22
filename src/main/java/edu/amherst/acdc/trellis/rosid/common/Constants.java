@@ -21,11 +21,6 @@ package edu.amherst.acdc.trellis.rosid.common;
 public final class Constants {
 
     /**
-     * The topic that notifies about resource deletion
-     */
-    public static final String TOPIC_DELETE = "trellis.delete";
-
-    /**
      * The topic that notifies about object changes
      */
     public static final String TOPIC_EVENT = "trellis.event";
@@ -41,6 +36,16 @@ public final class Constants {
     public static final String TOPIC_INBOUND_DELETE = "trellis.inbound.delete";
 
     /**
+     * The topic that is used to add LDP membership triples
+     */
+    public static final String TOPIC_LDP_MEMBERSHIP_ADD = "trellis.ldpmembership.add";
+
+    /**
+     * The topic that is used to remove LDP membership triples
+     */
+    public static final String TOPIC_LDP_MEMBERSHIP_DELETE = "trellis.ldpmembership.delete";
+
+    /**
      * The topic that is used to add LDP container triples
      */
     public static final String TOPIC_LDP_CONTAINER_ADD = "trellis.ldpcontainer.add";
@@ -53,12 +58,12 @@ public final class Constants {
     /**
      * The aggregated (windowed) topic that notifies the cache to be regenerated
      */
-    public static final String TOPIC_RECACHE = "trellis.cache";
+    public static final String TOPIC_CACHE_AGGREGATE = "trellis.cache.aggregate";
 
     /**
-     * The topic that notifies about resource modification
+     * The topic that regenerates the cache
      */
-    public static final String TOPIC_UPDATE = "trellis.update";
+    public static final String TOPIC_CACHE = "trellis.cache";
 
     private Constants() {
         // prevent instantiation
