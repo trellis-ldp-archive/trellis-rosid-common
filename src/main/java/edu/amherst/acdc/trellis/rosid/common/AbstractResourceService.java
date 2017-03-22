@@ -121,39 +121,26 @@ public abstract class AbstractResourceService implements ResourceService, AutoCl
     protected abstract Boolean write(final IRI identifier, final Stream<? extends Quad> delete,
             final Stream<? extends Quad> add, final Instant time);
 
-        // Add audit quads -- MOVE this to the HTTP layer // Add AS Create/Update/Delete type
-        //          // remove session from method signature
-        //final RDF rdf = RDFUtils.getInstance();
-        //final BlankNode bnode = rdf.createBlankNode();
-        //dataset.add(rdf.createQuad(Trellis.PreferAudit, identifier, PROV.wasGeneratedBy, bnode));
-        //dataset.add(rdf.createQuad(Trellis.PreferAudit, bnode, type, PROV.Activity));
-        //dataset.add(rdf.createQuad(Trellis.PreferAudit, bnode, PROV.startedAtTime, rdf.createLiteral(now().toString(),
-                        //XSD.dateTime)));
-        //dataset.add(rdf.createQuad(Trellis.PreferAudit, bnode, PROV.wasAssociatedWith, session.getAgent()));
-        //session.getDelegatedBy().ifPresent(delegate ->
-                //dataset.add(rdf.createQuad(Trellis.PreferAudit, bnode, PROV.actedOnBehalfOf, delegate)));
-
     @Override
     public Boolean put(final IRI identifier, final Dataset dataset) {
-        // TODO add zk node or return false
+        // TODO add ephemeral zk node or return false
 
         final Instant time = now();
         final Boolean isCreate = dataset.contains(of(PreferAudit), null, type, Create);
         final Boolean isDelete = dataset.contains(of(PreferAudit), null, type, Delete);
-        final Optional<Resource> existingRes = get(identifier, time);
+        final Optional<Resource> resource = get(identifier, time);
 
-        if (existingRes.isPresent() && isCreate) {
+        if (resource.isPresent() && isCreate) {
             LOGGER.warn("The resource already exists and cannot be created: {}", identifier.getIRIString());
             return false;
-        } else if (!existingRes.isPresent() && isDelete) {
+        } else if (!resource.isPresent() && isDelete) {
             LOGGER.warn("The resource does not exist and cannot be deleted: {}", identifier.getIRIString());
             return false;
         }
 
-        final String domain = identifier.getIRIString().split("/", 2)[0];
         final Dataset existing = rdf.createDataset();
 
-        existingRes.ifPresent(res -> res.stream().filter(q -> q.getGraphName().isPresent() &&
+        resource.ifPresent(res -> res.stream().filter(q -> q.getGraphName().isPresent() &&
                 (PreferUserManaged.equals(q.getGraphName().get()) ||
                 PreferServerManaged.equals(q.getGraphName().get()))).forEach(existing::add));
 
@@ -171,7 +158,22 @@ public abstract class AbstractResourceService implements ResourceService, AutoCl
         }
 
         // TODO remove zk node
+        return emit(identifier, dataset, adding, removing);
+    }
 
+    /**
+     * Emit messages to the appropriate Kafka topics
+     * @param identifier the identifier
+     * @param dataset the original dataset
+     * @param adding the dataset of quads being added
+     * @param removing the dataset of quads being removed
+     * @return true if all messages are successfully added to the Kafka broker; false otherwise
+     */
+    private Boolean emit(final IRI identifier, final Dataset dataset, final Dataset adding,
+            final Dataset removing) {
+        final String domain = identifier.getIRIString().split("/", 2)[0];
+        final Boolean isCreate = dataset.contains(of(PreferAudit), null, type, Create);
+        final Boolean isDelete = dataset.contains(of(PreferAudit), null, type, Delete);
         try {
             final List<Future<RecordMetadata>> results = new ArrayList<>();
 
