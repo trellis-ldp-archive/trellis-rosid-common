@@ -17,6 +17,7 @@ package edu.amherst.acdc.trellis.rosid.common;
 
 import static java.time.Instant.parse;
 import static java.util.Optional.empty;
+import static org.apache.curator.framework.CuratorFrameworkFactory.newClient;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -32,8 +33,11 @@ import org.apache.commons.rdf.api.IRI;
 import org.apache.commons.rdf.api.Quad;
 import org.apache.commons.rdf.api.RDF;
 import org.apache.commons.rdf.jena.JenaRDF;
+import org.apache.curator.retry.RetryNTimes;
+import org.apache.curator.test.TestingServer;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.apache.kafka.clients.producer.MockProducer;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
@@ -47,12 +51,15 @@ public class AbstractResourceServiceTest {
 
     private static final RDF rdf = new JenaRDF();
 
+    private static TestingServer curator;
+
     @Mock
     private EventService mockEventService, mockEventService2;
 
     public static class MyResourceService extends AbstractResourceService {
-        public MyResourceService() {
-            super(new MockProducer<>(true, new StringSerializer(), new DatasetSerialization()));
+        public MyResourceService(final String connectString) {
+            super(new MockProducer<>(true, new StringSerializer(), new DatasetSerialization()),
+                    newClient(connectString, new RetryNTimes(10, 1000)));
         }
 
         @Override
@@ -72,11 +79,16 @@ public class AbstractResourceServiceTest {
         }
     }
 
+    @BeforeClass
+    public static void setUp() throws Exception {
+        curator = new TestingServer(true);
+    }
+
     @Test
     public void testResourceService() {
         final Instant time = parse("2017-02-16T11:15:03Z");
         final IRI identifier = rdf.createIRI("trellis:repository/resource");
-        final ResourceService svc = new MyResourceService();
+        final ResourceService svc = new MyResourceService(curator.getConnectString());
         svc.bind(mockEventService);
         svc.unbind(mockEventService);
         svc.bind(mockEventService);

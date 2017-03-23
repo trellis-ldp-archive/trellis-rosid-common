@@ -40,13 +40,17 @@ import static edu.amherst.acdc.trellis.vocabulary.Trellis.PreferUserManaged;
 import static java.time.Instant.now;
 import static java.util.Collections.emptyMap;
 import static java.util.Optional.of;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Stream.concat;
+import static org.apache.commons.codec.digest.DigestUtils.md5Hex;
+import static org.apache.curator.framework.CuratorFrameworkFactory.newClient;
 import static org.slf4j.LoggerFactory.getLogger;
 
 import edu.amherst.acdc.trellis.api.Resource;
 import edu.amherst.acdc.trellis.spi.EventService;
 import edu.amherst.acdc.trellis.spi.ResourceService;
+import edu.amherst.acdc.trellis.spi.RuntimeRepositoryException;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -62,6 +66,10 @@ import org.apache.commons.rdf.api.Dataset;
 import org.apache.commons.rdf.api.IRI;
 import org.apache.commons.rdf.api.Quad;
 import org.apache.commons.rdf.api.RDF;
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.recipes.locks.InterProcessLock;
+import org.apache.curator.framework.recipes.locks.InterProcessSemaphoreMutex;
+import org.apache.curator.retry.BoundedExponentialBackoffRetry;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -75,7 +83,11 @@ public abstract class AbstractResourceService implements ResourceService, AutoCl
 
     private static final Logger LOGGER = getLogger(AbstractResourceService.class);
 
+    private final String SESSION_ZNODE = "/session";
+
     protected final Producer<String, Dataset> producer;
+
+    protected final CuratorFramework curator;
 
     protected EventService evtSvc;
 
@@ -85,15 +97,29 @@ public abstract class AbstractResourceService implements ResourceService, AutoCl
      * Create an AbstractResourceService
      */
     public AbstractResourceService() {
-        this(new KafkaProducer<>(kafkaProducerProps()));
+        this(new KafkaProducer<>(kafkaProducerProps()),
+                newClient(System.getProperty("zk.connectString"),
+                    new BoundedExponentialBackoffRetry(
+                        Integer.parseInt(System.getProperty("zk.retry.ms", "2000")),
+                        Integer.parseInt(System.getProperty("zk.retry.max.ms", "30000")),
+                        Integer.parseInt(System.getProperty("zk.retry.max", "10")))));
     }
 
     /**
      * Create an AbstractResourceService with the given producer
      * @param producer the kafka producer
+     * @param curator the zookeeper curator
      */
-    public AbstractResourceService(final Producer<String, Dataset> producer) {
+    public AbstractResourceService(final Producer<String, Dataset> producer, final CuratorFramework curator) {
         this.producer = producer;
+        this.curator = curator;
+        this.curator.start();
+        try {
+            curator.createContainers(SESSION_ZNODE);
+        } catch (final Exception ex) {
+            LOGGER.error("Could not create zk session node: {}", ex.getMessage());
+            throw new RuntimeRepositoryException(ex);
+        }
     }
 
     @Override
@@ -123,8 +149,36 @@ public abstract class AbstractResourceService implements ResourceService, AutoCl
 
     @Override
     public Boolean put(final IRI identifier, final Dataset dataset) {
-        // TODO add ephemeral zk node or return false
+        final String path = SESSION_ZNODE + "/" + md5Hex(identifier.getIRIString());
+        final InterProcessLock lock = new InterProcessSemaphoreMutex(curator, path);
 
+        try {
+            if (!lock.acquire(Long.parseLong(System.getProperty("zk.lock.wait.ms", "100")), MILLISECONDS)) {
+                return false;
+            }
+        } catch (final Exception ex) {
+            LOGGER.error("Error acquiring resource lock: {}", ex.getMessage());
+            return false;
+        }
+
+        final Boolean status = doWrite(identifier, dataset);
+
+        try {
+            lock.release();
+        } catch (final Exception ex) {
+            LOGGER.error("Error releasing resource lock: {}", ex.getMessage());
+        }
+
+        return status;
+    }
+
+    /**
+     * Write the resource data to the persistence layer
+     * @param identifier the identifier
+     * @param dataset the dataset
+     * @return true if the operation was successful; false otherwise
+     */
+    private Boolean doWrite(final IRI identifier, final Dataset dataset) {
         final Instant time = now();
         final Boolean isCreate = dataset.contains(of(PreferAudit), null, type, Create);
         final Boolean isDelete = dataset.contains(of(PreferAudit), null, type, Delete);
@@ -139,7 +193,6 @@ public abstract class AbstractResourceService implements ResourceService, AutoCl
         }
 
         final Dataset existing = rdf.createDataset();
-
         resource.ifPresent(res -> res.stream().filter(q -> q.getGraphName().isPresent() &&
                 (PreferUserManaged.equals(q.getGraphName().get()) ||
                 PreferServerManaged.equals(q.getGraphName().get()))).forEach(existing::add));
@@ -157,7 +210,6 @@ public abstract class AbstractResourceService implements ResourceService, AutoCl
             return false;
         }
 
-        // TODO remove zk node
         return emit(identifier, dataset, adding, removing);
     }
 
@@ -169,8 +221,7 @@ public abstract class AbstractResourceService implements ResourceService, AutoCl
      * @param removing the dataset of quads being removed
      * @return true if all messages are successfully added to the Kafka broker; false otherwise
      */
-    private Boolean emit(final IRI identifier, final Dataset dataset, final Dataset adding,
-            final Dataset removing) {
+    private Boolean emit(final IRI identifier, final Dataset dataset, final Dataset adding, final Dataset removing) {
         final String domain = identifier.getIRIString().split("/", 2)[0];
         final Boolean isCreate = dataset.contains(of(PreferAudit), null, type, Create);
         final Boolean isDelete = dataset.contains(of(PreferAudit), null, type, Delete);
@@ -227,8 +278,8 @@ public abstract class AbstractResourceService implements ResourceService, AutoCl
 
     @Override
     public void close() {
-        // TODO -- close any ZK connections
         producer.close();
+        curator.close();
     }
 
     private static Properties kafkaProducerProps() {
