@@ -46,14 +46,14 @@ public final class Constants {
     public static final String TOPIC_LDP_MEMBERSHIP_DELETE = "trellis.ldpmembership.delete";
 
     /**
-     * The topic that is used to add LDP container triples
+     * The topic that is used to add LDP containment triples
      */
-    public static final String TOPIC_LDP_CONTAINER_ADD = "trellis.ldpcontainer.add";
+    public static final String TOPIC_LDP_CONTAINMENT_ADD = "trellis.ldpcontainment.add";
 
     /**
-     * The topic that is used to remove LDP container triples
+     * The topic that is used to remove LDP containment triples
      */
-    public static final String TOPIC_LDP_CONTAINER_DELETE = "trellis.ldpcontainer.delete";
+    public static final String TOPIC_LDP_CONTAINMENT_DELETE = "trellis.ldpcontainment.delete";
 
     /**
      * The aggregated (windowed) topic that notifies the cache to be regenerated

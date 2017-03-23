@@ -18,8 +18,8 @@ package edu.amherst.acdc.trellis.rosid.common;
 import static edu.amherst.acdc.trellis.rosid.common.Constants.TOPIC_CACHE;
 import static edu.amherst.acdc.trellis.rosid.common.Constants.TOPIC_INBOUND_ADD;
 import static edu.amherst.acdc.trellis.rosid.common.Constants.TOPIC_INBOUND_DELETE;
-import static edu.amherst.acdc.trellis.rosid.common.Constants.TOPIC_LDP_CONTAINER_ADD;
-import static edu.amherst.acdc.trellis.rosid.common.Constants.TOPIC_LDP_CONTAINER_DELETE;
+import static edu.amherst.acdc.trellis.rosid.common.Constants.TOPIC_LDP_CONTAINMENT_ADD;
+import static edu.amherst.acdc.trellis.rosid.common.Constants.TOPIC_LDP_CONTAINMENT_DELETE;
 import static edu.amherst.acdc.trellis.rosid.common.Constants.TOPIC_LDP_MEMBERSHIP_ADD;
 import static edu.amherst.acdc.trellis.rosid.common.Constants.TOPIC_LDP_MEMBERSHIP_DELETE;
 import static edu.amherst.acdc.trellis.rosid.common.RDFUtils.endedAtQuad;
@@ -205,10 +205,10 @@ public abstract class AbstractResourceService implements ResourceService, AutoCl
             getParent(identifier.getIRIString()).ifPresent(container -> {
                 dataset.add(rdf.createQuad(PreferContainment, rdf.createIRI(container), contains, identifier));
                 if (isDelete) {
-                    results.add(producer.send(new ProducerRecord<>(TOPIC_LDP_CONTAINER_DELETE, container, dataset)));
+                    results.add(producer.send(new ProducerRecord<>(TOPIC_LDP_CONTAINMENT_DELETE, container, dataset)));
                     results.add(producer.send(new ProducerRecord<>(TOPIC_LDP_MEMBERSHIP_DELETE, container, dataset)));
                 } else if (isCreate) {
-                    results.add(producer.send(new ProducerRecord<>(TOPIC_LDP_CONTAINER_ADD, container, dataset)));
+                    results.add(producer.send(new ProducerRecord<>(TOPIC_LDP_CONTAINMENT_ADD, container, dataset)));
                     results.add(producer.send(new ProducerRecord<>(TOPIC_LDP_MEMBERSHIP_ADD, container, dataset)));
                 }
             });
