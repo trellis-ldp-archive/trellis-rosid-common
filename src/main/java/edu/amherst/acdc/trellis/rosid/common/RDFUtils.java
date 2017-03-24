@@ -32,7 +32,6 @@ import org.apache.commons.rdf.api.Dataset;
 import org.apache.commons.rdf.api.IRI;
 import org.apache.commons.rdf.api.Quad;
 import org.apache.commons.rdf.api.RDF;
-import org.apache.commons.rdf.api.Triple;
 
 /**
  * @author acoburn
@@ -65,42 +64,42 @@ public final class RDFUtils {
     }
 
     /**
-     * A predicate that returns true if the object of the provided triple is an IRI
+     * A predicate that returns true if the object of the provided quad is an IRI
      */
-    public static final Predicate<Triple> hasObjectIRI = triple -> triple.getObject() instanceof IRI;
+    public static final Predicate<Quad> hasObjectIRI = quad -> quad.getObject() instanceof IRI;
 
     /**
-     * A predicate that returns true if the subject of the provided triple is an IRI
+     * A predicate that returns true if the subject of the provided quad is an IRI
      */
-    public static final Predicate<Triple> hasSubjectIRI = triple -> triple.getSubject() instanceof IRI;
+    public static final Predicate<Quad> hasSubjectIRI = quad -> quad.getSubject() instanceof IRI;
 
     /**
-     * A predicate that returns whether the object of the triple is in the repository domain
+     * A predicate that returns whether the object of the quad is in the repository domain
      * @param domain the domain
      * @return a predicate that returns true if the object of the triple is in the repository domain
      */
-    public static Predicate<Triple> inDomain(final String domain) {
-        return hasObjectIRI.and(triple -> ((IRI) triple.getObject()).getIRIString().split("/", 2)[0].equals(domain));
+    public static Predicate<Quad> inDomain(final String domain) {
+        return hasObjectIRI.and(quad -> ((IRI) quad.getObject()).getIRIString().split("/", 2)[0].equals(domain));
     }
 
     /**
-     * A predicate to determine if the object of the triple is equivalent to the provided IRI
+     * A predicate to determine if the object of the quad is equivalent to the provided IRI
      * @param identifier the identifier
      * @return a predicate that returns true if the object is equivalent to the same resource
      */
-    public static Predicate<Triple> objectIsSameResource(final IRI identifier) {
-        return hasObjectIRI.and(triple -> ((IRI) triple.getObject()).getIRIString().split("#", 2)[0]
+    public static Predicate<Quad> objectIsSameResource(final IRI identifier) {
+        return hasObjectIRI.and(quad -> ((IRI) quad.getObject()).getIRIString().split("#", 2)[0]
                     .equals(identifier.getIRIString()));
     }
 
 
     /**
-     * A predicate to determine if the subject of the triple is equivalent to the provided IRI
+     * A predicate to determine if the subject of the quad is equivalent to the provided IRI
      * @param identifier the identifier
      * @return a predicate that returns true if the subject is equivalent to the same resource
      */
-    public static Predicate<Triple> subjectIsSameResource(final IRI identifier) {
-        return hasSubjectIRI.and(triple -> ((IRI) triple.getSubject()).getIRIString().split("#", 2)[0]
+    public static Predicate<Quad> subjectIsSameResource(final IRI identifier) {
+        return hasSubjectIRI.and(quad -> ((IRI) quad.getSubject()).getIRIString().split("#", 2)[0]
                     .equals(identifier.getIRIString()));
     }
 

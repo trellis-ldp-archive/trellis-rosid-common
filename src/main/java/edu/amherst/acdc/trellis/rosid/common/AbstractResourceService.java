@@ -15,33 +15,15 @@
  */
 package edu.amherst.acdc.trellis.rosid.common;
 
-import static edu.amherst.acdc.trellis.rosid.common.Constants.TOPIC_CACHE;
-import static edu.amherst.acdc.trellis.rosid.common.Constants.TOPIC_INBOUND_ADD;
-import static edu.amherst.acdc.trellis.rosid.common.Constants.TOPIC_INBOUND_DELETE;
-import static edu.amherst.acdc.trellis.rosid.common.Constants.TOPIC_LDP_CONTAINMENT_ADD;
-import static edu.amherst.acdc.trellis.rosid.common.Constants.TOPIC_LDP_CONTAINMENT_DELETE;
-import static edu.amherst.acdc.trellis.rosid.common.Constants.TOPIC_LDP_MEMBERSHIP_ADD;
-import static edu.amherst.acdc.trellis.rosid.common.Constants.TOPIC_LDP_MEMBERSHIP_DELETE;
 import static edu.amherst.acdc.trellis.rosid.common.RDFUtils.endedAtQuad;
 import static edu.amherst.acdc.trellis.rosid.common.RDFUtils.getInstance;
-import static edu.amherst.acdc.trellis.rosid.common.RDFUtils.getParent;
-import static edu.amherst.acdc.trellis.rosid.common.RDFUtils.inDomain;
-import static edu.amherst.acdc.trellis.rosid.common.RDFUtils.objectIsSameResource;
-import static edu.amherst.acdc.trellis.rosid.common.RDFUtils.subjectIsSameResource;
 import static edu.amherst.acdc.trellis.vocabulary.AS.Create;
 import static edu.amherst.acdc.trellis.vocabulary.AS.Delete;
-import static edu.amherst.acdc.trellis.vocabulary.Fedora.PreferInboundReferences;
-import static edu.amherst.acdc.trellis.vocabulary.LDP.PreferContainment;
-import static edu.amherst.acdc.trellis.vocabulary.LDP.contains;
 import static edu.amherst.acdc.trellis.vocabulary.RDF.type;
 import static edu.amherst.acdc.trellis.vocabulary.Trellis.PreferAudit;
-import static edu.amherst.acdc.trellis.vocabulary.Trellis.PreferServerManaged;
-import static edu.amherst.acdc.trellis.vocabulary.Trellis.PreferUserManaged;
 import static java.time.Instant.now;
-import static java.util.Collections.emptyMap;
 import static java.util.Optional.of;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Stream.concat;
 import static org.apache.commons.codec.digest.DigestUtils.md5Hex;
 import static org.apache.curator.framework.CuratorFrameworkFactory.newClient;
@@ -53,13 +35,9 @@ import edu.amherst.acdc.trellis.spi.ResourceService;
 import edu.amherst.acdc.trellis.spi.RuntimeRepositoryException;
 
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 import java.util.stream.Stream;
 
 import org.apache.commons.rdf.api.Dataset;
@@ -72,8 +50,6 @@ import org.apache.curator.framework.recipes.locks.InterProcessSemaphoreMutex;
 import org.apache.curator.retry.BoundedExponentialBackoffRetry;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
-import org.apache.kafka.clients.producer.ProducerRecord;
-import org.apache.kafka.clients.producer.RecordMetadata;
 import org.slf4j.Logger;
 
 /**
@@ -192,88 +168,17 @@ public abstract class AbstractResourceService implements ResourceService, AutoCl
             return false;
         }
 
-        final Dataset existing = rdf.createDataset();
-        resource.ifPresent(res -> res.stream().filter(q -> q.getGraphName().isPresent() &&
-                (PreferUserManaged.equals(q.getGraphName().get()) ||
-                PreferServerManaged.equals(q.getGraphName().get()))).forEach(existing::add));
-
-        final Dataset adding = rdf.createDataset();
-        dataset.stream().filter(q -> !existing.contains(q)).forEach(adding::add);
-
-        final Dataset removing = rdf.createDataset();
-        existing.stream().filter(q -> !dataset.contains(q)).forEach(removing::add);
+        final EventProducer eventProducer = new EventProducer(producer, identifier, dataset);
+        resource.map(Resource::stream).ifPresent(eventProducer::into);
 
         final Instant later = now();
-        if (!write(identifier, removing.stream(), concat(adding.stream(), endedAtQuad(identifier, adding, later)),
-                    later)) {
+        if (!write(identifier, eventProducer.getRemoved(),
+                    concat(eventProducer.getAdded(), endedAtQuad(identifier, dataset, later)), later)) {
             LOGGER.error("Could not write data to persistence layer!");
             return false;
         }
 
-        return emit(identifier, dataset, adding, removing);
-    }
-
-    /**
-     * Emit messages to the appropriate Kafka topics
-     * @param identifier the identifier
-     * @param dataset the original dataset
-     * @param adding the dataset of quads being added
-     * @param removing the dataset of quads being removed
-     * @return true if all messages are successfully added to the Kafka broker; false otherwise
-     */
-    private Boolean emit(final IRI identifier, final Dataset dataset, final Dataset adding, final Dataset removing) {
-        final String domain = identifier.getIRIString().split("/", 2)[0];
-        final Boolean isCreate = dataset.contains(of(PreferAudit), null, type, Create);
-        final Boolean isDelete = dataset.contains(of(PreferAudit), null, type, Delete);
-        try {
-            final List<Future<RecordMetadata>> results = new ArrayList<>();
-
-            results.add(producer.send(new ProducerRecord<>(TOPIC_CACHE, identifier.getIRIString(), dataset)));
-
-            // Handle the addition of any in-domain outbound triples
-            adding.getGraph(PreferUserManaged).map(g -> g.stream().filter(subjectIsSameResource(identifier))
-                .filter(inDomain(domain).and(objectIsSameResource(identifier).negate()))
-                .map(t -> rdf.createQuad(PreferInboundReferences, t.getSubject(), t.getPredicate(), t.getObject()))
-                .collect(groupingBy(q -> ((IRI) q.getObject()).getIRIString()))).orElse(emptyMap())
-                .entrySet().forEach(e -> {
-                    final Dataset data = rdf.createDataset();
-                    e.getValue().forEach(data::add);
-                    results.add(producer.send(new ProducerRecord<>(TOPIC_INBOUND_ADD, e.getKey(), data)));
-                });
-
-            // Handle the removal of any in-domain outbound triples
-            removing.getGraph(PreferUserManaged).map(g -> g.stream().filter(subjectIsSameResource(identifier))
-                .filter(inDomain(domain).and(objectIsSameResource(identifier).negate()))
-                .map(t -> rdf.createQuad(PreferInboundReferences, t.getSubject(), t.getPredicate(), t.getObject()))
-                .collect(groupingBy(q -> ((IRI) q.getObject()).getIRIString()))).orElse(emptyMap())
-                .entrySet().forEach(e -> {
-                    final Dataset data = rdf.createDataset();
-                    e.getValue().forEach(data::add);
-                    results.add(producer.send(new ProducerRecord<>(TOPIC_INBOUND_DELETE, e.getKey(), data)));
-                });
-
-            // Update the containment triples of the parent resource if this is a delete or create operation
-            getParent(identifier.getIRIString()).ifPresent(container -> {
-                dataset.add(rdf.createQuad(PreferContainment, rdf.createIRI(container), contains, identifier));
-                if (isDelete) {
-                    results.add(producer.send(new ProducerRecord<>(TOPIC_LDP_CONTAINMENT_DELETE, container, dataset)));
-                    results.add(producer.send(new ProducerRecord<>(TOPIC_LDP_MEMBERSHIP_DELETE, container, dataset)));
-                } else if (isCreate) {
-                    results.add(producer.send(new ProducerRecord<>(TOPIC_LDP_CONTAINMENT_ADD, container, dataset)));
-                    results.add(producer.send(new ProducerRecord<>(TOPIC_LDP_MEMBERSHIP_ADD, container, dataset)));
-                }
-            });
-
-            for (final Future<RecordMetadata> result : results) {
-                final RecordMetadata res = result.get();
-                LOGGER.info("Send record to topic: {}, {}", res.topic(), res.timestamp());
-            }
-
-            return true;
-        } catch (final InterruptedException | ExecutionException ex) {
-            LOGGER.error("Error sending record to kafka topic: {}", ex.getMessage());
-            return false;
-        }
+        return eventProducer.emit();
     }
 
     @Override
