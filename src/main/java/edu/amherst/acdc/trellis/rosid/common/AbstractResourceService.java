@@ -140,7 +140,7 @@ public abstract class AbstractResourceService implements ResourceService, AutoCl
             return false;
         }
 
-        final Boolean status = doWrite(identifier, dataset);
+        final Boolean status = tryWrite(identifier, dataset);
 
         try {
             lock.release();
@@ -157,7 +157,7 @@ public abstract class AbstractResourceService implements ResourceService, AutoCl
      * @param dataset the dataset
      * @return true if the operation was successful; false otherwise
      */
-    private Boolean doWrite(final IRI identifier, final Dataset dataset) {
+    private Boolean tryWrite(final IRI identifier, final Dataset dataset) {
         final Instant time = now();
         final Boolean isCreate = dataset.contains(of(PreferAudit), null, type, Create);
         final Boolean isDelete = dataset.contains(of(PreferAudit), null, type, Delete);
