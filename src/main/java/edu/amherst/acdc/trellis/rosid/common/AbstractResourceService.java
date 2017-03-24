@@ -27,6 +27,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.stream.Stream.concat;
 import static org.apache.commons.codec.digest.DigestUtils.md5Hex;
 import static org.apache.curator.framework.CuratorFrameworkFactory.newClient;
+import static org.apache.curator.framework.imps.CuratorFrameworkState.LATENT;
 import static org.slf4j.LoggerFactory.getLogger;
 
 import edu.amherst.acdc.trellis.api.Resource;
@@ -89,9 +90,11 @@ public abstract class AbstractResourceService implements ResourceService, AutoCl
     public AbstractResourceService(final Producer<String, Dataset> producer, final CuratorFramework curator) {
         this.producer = producer;
         this.curator = curator;
-        this.curator.start();
+        if (LATENT.equals(curator.getState())) {
+            this.curator.start();
+        }
         try {
-            curator.createContainers(SESSION_ZNODE);
+            this.curator.createContainers(SESSION_ZNODE);
         } catch (final Exception ex) {
             LOGGER.error("Could not create zk session node: {}", ex.getMessage());
             throw new RuntimeRepositoryException(ex);
