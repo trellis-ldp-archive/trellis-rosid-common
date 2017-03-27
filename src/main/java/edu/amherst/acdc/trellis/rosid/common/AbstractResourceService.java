@@ -26,6 +26,7 @@ import static java.time.Instant.now;
 import static java.util.Optional.of;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.stream.Stream.concat;
+import static java.util.stream.Stream.empty;
 import static org.apache.commons.codec.digest.DigestUtils.md5Hex;
 import static org.apache.curator.framework.CuratorFrameworkFactory.newClient;
 import static org.apache.curator.framework.imps.CuratorFrameworkState.LATENT;
@@ -46,6 +47,7 @@ import org.apache.commons.rdf.api.Dataset;
 import org.apache.commons.rdf.api.IRI;
 import org.apache.commons.rdf.api.Quad;
 import org.apache.commons.rdf.api.RDF;
+import org.apache.commons.rdf.api.Triple;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.locks.InterProcessLock;
 import org.apache.curator.framework.recipes.locks.InterProcessSemaphoreMutex;
@@ -188,6 +190,23 @@ public abstract class AbstractResourceService implements ResourceService, AutoCl
     @Override
     public Optional<IRI> getContainer(final IRI identifier) {
         return getParent(identifier.getIRIString()).map(rdf::createIRI);
+    }
+
+    @Override
+    public Boolean compact(final IRI identifier) {
+        // TODO -- implement this
+        return false;
+    }
+
+    @Override
+    public Boolean purge(final IRI identifier) {
+        // TODO -- implement this
+        return false;
+    }
+
+    @Override
+    public Stream<Triple> list(final IRI identifier) {
+        return empty();
     }
 
     @Override
