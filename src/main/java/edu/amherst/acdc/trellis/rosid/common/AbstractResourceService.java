@@ -206,6 +206,13 @@ public abstract class AbstractResourceService implements ResourceService, AutoCl
 
     @Override
     public Stream<Triple> list(final IRI identifier) {
+        // TODO -- implement this
+        return empty();
+    }
+
+    @Override
+    public Stream<Quad> export(final IRI identifier) {
+        // TODO -- implement this
         return empty();
     }
 
