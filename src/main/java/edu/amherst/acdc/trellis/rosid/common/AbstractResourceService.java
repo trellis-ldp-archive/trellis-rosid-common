@@ -17,6 +17,7 @@ package edu.amherst.acdc.trellis.rosid.common;
 
 import static edu.amherst.acdc.trellis.rosid.common.RDFUtils.endedAtQuad;
 import static edu.amherst.acdc.trellis.rosid.common.RDFUtils.getInstance;
+import static edu.amherst.acdc.trellis.rosid.common.RDFUtils.getParent;
 import static edu.amherst.acdc.trellis.vocabulary.AS.Create;
 import static edu.amherst.acdc.trellis.vocabulary.AS.Delete;
 import static edu.amherst.acdc.trellis.vocabulary.RDF.type;
@@ -182,6 +183,11 @@ public abstract class AbstractResourceService implements ResourceService, AutoCl
         }
 
         return eventProducer.emit();
+    }
+
+    @Override
+    public Optional<IRI> getContainer(final IRI identifier) {
+        return getParent(identifier.getIRIString()).map(rdf::createIRI);
     }
 
     @Override

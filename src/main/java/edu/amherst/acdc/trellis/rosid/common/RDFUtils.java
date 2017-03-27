@@ -109,9 +109,6 @@ public final class RDFUtils {
      * @return the parent if it exists
      */
     public static Optional<String> getParent(final String identifier) {
-        if (identifier.endsWith("/")) {
-            return getParent(identifier.substring(0, identifier.length() - 1));
-        }
         return of(identifier.lastIndexOf('/')).filter(idx -> idx > 0).map(idx -> identifier.substring(0, idx));
     }
 
