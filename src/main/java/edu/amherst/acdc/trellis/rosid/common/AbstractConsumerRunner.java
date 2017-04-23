@@ -44,6 +44,7 @@ abstract class AbstractConsumerRunner implements Runnable {
 
     /**
      * A base consumer runner class, using the system-defined Kafka Consumer
+     * @param topics the kafka topics to consume
      */
     protected AbstractConsumerRunner(final Collection<TopicPartition> topics) {
         this(topics, new KafkaConsumer<>(kafkaConsumerProps()));
@@ -51,7 +52,18 @@ abstract class AbstractConsumerRunner implements Runnable {
     }
 
     /**
+     * A base consumer runner class, using the system-defined Kafka Consumer
+     * @param topics the kafka topics to consume
+     * @param properties the user-defined properties
+     */
+    protected AbstractConsumerRunner(final Collection<TopicPartition> topics, final Properties properties) {
+        this(topics, new KafkaConsumer<>(properties));
+        LOGGER.info("Initializing a kafka consumer with user-defined properties");
+    }
+
+    /**
      * A base consumer runner class
+     * @param topics the kafka topics to consume
      * @param consumer the kafka consumer to use
      */
     protected AbstractConsumerRunner(final Collection<TopicPartition> topics,

@@ -33,7 +33,7 @@ ext {
     commonsCodecVersion = '1.10'
     commonsIoVersion = '2.5'
     commonsRdfVersion = '0.3.0-incubating'
-    curatorVersion = '3.3.0'
+    curatorVersion = '2.12.0'
     jacksonVersion = '2.8.5'
     kafkaVersion = '0.10.2.0'
     slf4jVersion = '1.7.21'

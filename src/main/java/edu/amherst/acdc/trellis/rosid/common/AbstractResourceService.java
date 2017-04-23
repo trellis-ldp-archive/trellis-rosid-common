@@ -23,6 +23,7 @@ import static edu.amherst.acdc.trellis.vocabulary.AS.Delete;
 import static edu.amherst.acdc.trellis.vocabulary.RDF.type;
 import static edu.amherst.acdc.trellis.vocabulary.Trellis.PreferAudit;
 import static java.time.Instant.now;
+import static java.util.Objects.isNull;
 import static java.util.Optional.of;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.stream.Stream.concat;
@@ -83,6 +84,19 @@ public abstract class AbstractResourceService implements ResourceService, AutoCl
                         Integer.parseInt(System.getProperty("zk.retry.ms", "2000")),
                         Integer.parseInt(System.getProperty("zk.retry.max.ms", "30000")),
                         Integer.parseInt(System.getProperty("zk.retry.max", "10")))));
+    }
+
+    /**
+     * Create an AbstractResourceService with the given properties
+     * @param kafkaProperties the kafka properties
+     * @param zkProperties the zookeeper properties
+     */
+    public AbstractResourceService(final Properties kafkaProperties, final Properties zkProperties) {
+        this(new KafkaProducer<>(addDefaults(kafkaProperties)), newClient(zkProperties.getProperty("connectString"),
+                    new BoundedExponentialBackoffRetry(
+                        Integer.parseInt(zkProperties.getProperty("retry.ms", "2000")),
+                        Integer.parseInt(zkProperties.getProperty("retry.max.ms", "30000")),
+                        Integer.parseInt(zkProperties.getProperty("retry.max", "10")))));
     }
 
     /**
@@ -225,13 +239,36 @@ public abstract class AbstractResourceService implements ResourceService, AutoCl
     private static Properties kafkaProducerProps() {
         final Properties props = new Properties();
         props.put("bootstrap.servers", System.getProperty("kafka.bootstrap.servers"));
-        props.put("acks", System.getProperty("kafka.acks", "all"));
-        props.put("retries", System.getProperty("kafka.retries", "0"));
-        props.put("batch.size", System.getProperty("kafka.batch.size", "16384"));
-        props.put("linger.ms", System.getProperty("kafka.linger.ms", "1"));
-        props.put("buffer.memory", System.getProperty("kafka.buffer.memory", "33554432"));
-        props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
-        props.put("value.serializer", "edu.amherst.acdc.trellis.rosid.common.DatasetSerializer");
+        props.put("acks", System.getProperty("kafka.acks"));
+        props.put("retries", System.getProperty("kafka.retries"));
+        props.put("batch.size", System.getProperty("kafka.batch.size"));
+        props.put("linger.ms", System.getProperty("kafka.linger.ms"));
+        props.put("buffer.memory", System.getProperty("kafka.buffer.memory"));
+        return addDefaults(props);
+    }
+
+    private static Properties addDefaults(final Properties props) {
+        if (isNull(props.getProperty("acks"))) {
+            props.setProperty("acks", "all");
+        }
+        if (isNull(props.getProperty("retries"))) {
+            props.setProperty("retries", "0");
+        }
+        if (isNull(props.getProperty("batch.size"))) {
+            props.put("batch.size", "16384");
+        }
+        if (isNull(props.getProperty("linger.ms"))) {
+            props.put("linger.ms", "1");
+        }
+        if (isNull(props.getProperty("buffer.memory"))) {
+            props.put("buffer.memory", "33554432");
+        }
+        if (isNull(props.getProperty("key.serializer"))) {
+            props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
+        }
+        if (isNull(props.getProperty("value.serializer"))) {
+            props.put("value.serializer", "edu.amherst.acdc.trellis.rosid.common.DatasetSerialization");
+        }
         return props;
     }
 }
