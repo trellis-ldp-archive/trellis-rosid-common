@@ -65,11 +65,6 @@ public class ResourceData {
         public Long size;
 
         /**
-         * The creation date of the datastream
-         */
-        public Instant created;
-
-        /**
          * The modification date of the datastream
          */
         public Instant modified;
@@ -118,11 +113,6 @@ public class ResourceData {
      * The acl:accessControl for the resource, if available
      */
     public String accessControl;
-
-    /**
-     * The creation date
-     */
-    public Instant created;
 
     /**
      * The modification date
@@ -174,9 +164,6 @@ public class ResourceData {
         rd.id = identifier.getIRIString();
 
         dataset.getGraph(Trellis.PreferServerManaged).ifPresent(graph -> {
-            graph.stream(identifier, DC.created, null).findFirst().map(objectLiteralAsString).map(Instant::parse)
-                .ifPresent(date -> rd.created = date);
-
             graph.stream(identifier, DC.modified, null).findFirst().map(objectLiteralAsString).map(Instant::parse)
                 .ifPresent(date -> rd.modified = date);
 
@@ -191,9 +178,6 @@ public class ResourceData {
                     .ifPresent(id -> {
                 rd.datastream = new ResourceData.DatastreamData();
                 rd.datastream.id = id.getIRIString();
-
-                graph.stream(id, DC.created, null).findFirst().map(objectLiteralAsString).map(Instant::parse)
-                    .ifPresent(date -> rd.datastream.created = date);
 
                 graph.stream(id, DC.modified, null).findFirst().map(objectLiteralAsString).map(Instant::parse)
                     .ifPresent(date -> rd.datastream.modified = date);
@@ -230,6 +214,6 @@ public class ResourceData {
             graph.stream(identifier, OA.annotationService, null).findFirst().map(objectUriAsString)
                 .ifPresent(res -> rd.annotationService = res);
         });
-        return of(rd).filter(x -> nonNull(x.ldpType)).filter(x -> nonNull(x.created));
+        return of(rd).filter(x -> nonNull(x.ldpType)).filter(x -> nonNull(x.modified));
     }
 }
