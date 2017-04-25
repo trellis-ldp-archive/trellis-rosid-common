@@ -139,11 +139,6 @@ public class ResourceData {
      */
     public String insertedContentRelation;
 
-    /**
-     * The dc:creator of the resource, if available
-     */
-    public String creator;
-
     private static final Function<Triple, String> objectUriAsString = triple ->
         ((IRI) triple.getObject()).getIRIString();
 
@@ -169,9 +164,6 @@ public class ResourceData {
 
             graph.stream(identifier, RDF.type, null).findFirst().map(objectUriAsString)
                 .ifPresent(type -> rd.ldpType = type);
-
-            graph.stream(identifier, DC.creator, null).findFirst().map(objectUriAsString)
-                .ifPresent(agent -> rd.creator = agent);
 
             // Populate datastream, if present
             graph.stream(identifier, DC.hasPart, null).findFirst().map(Triple::getObject).map(x -> (IRI) x)
