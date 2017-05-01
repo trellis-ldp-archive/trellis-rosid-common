@@ -18,6 +18,7 @@ package edu.amherst.acdc.trellis.rosid.common;
 import static java.time.Instant.parse;
 import static java.util.Optional.empty;
 import static org.apache.curator.framework.CuratorFrameworkFactory.newClient;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -29,6 +30,7 @@ import java.time.Instant;
 import java.util.Optional;
 import java.util.stream.Stream;
 
+import org.apache.commons.rdf.api.BlankNode;
 import org.apache.commons.rdf.api.IRI;
 import org.apache.commons.rdf.api.Quad;
 import org.apache.commons.rdf.api.RDF;
@@ -95,5 +97,21 @@ public class AbstractResourceServiceTest {
         svc.unbind(mockEventService2);
         assertFalse(svc.get(identifier, time).isPresent());
         assertTrue(svc.put(identifier, rdf.createDataset()));
+    }
+
+    @Test
+    public void testSkolemization() {
+        final BlankNode bnode = rdf.createBlankNode("testing");
+        final IRI iri = rdf.createIRI("trellis:bnode/testing");
+        final ResourceService svc = new MyResourceService(curator.getConnectString());
+
+        assertTrue(svc.skolemize(bnode) instanceof IRI);
+        assertTrue(((IRI) svc.skolemize(bnode)).getIRIString().startsWith("trellis:bnode/"));
+        assertTrue(svc.unskolemize(iri) instanceof BlankNode);
+        assertEquals(svc.unskolemize(iri), svc.unskolemize(iri));
+
+        assertFalse(svc.unskolemize(rdf.createLiteral("Test")) instanceof BlankNode);
+        assertFalse(svc.unskolemize(rdf.createIRI("trellis:repository/resource")) instanceof BlankNode);
+        assertFalse(svc.skolemize(rdf.createLiteral("Test2")) instanceof IRI);
     }
 }
