@@ -1,6 +1,4 @@
 /*
- * Copyright Amherst College
- *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,7 +11,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.amherst.acdc.trellis.rosid.common;
+package org.trellisldp.rosid.common;
 
 import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
@@ -22,12 +20,12 @@ import static java.util.stream.Collectors.toList;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import edu.amherst.acdc.trellis.vocabulary.ACL;
-import edu.amherst.acdc.trellis.vocabulary.DC;
-import edu.amherst.acdc.trellis.vocabulary.LDP;
-import edu.amherst.acdc.trellis.vocabulary.OA;
-import edu.amherst.acdc.trellis.vocabulary.RDF;
-import edu.amherst.acdc.trellis.vocabulary.Trellis;
+import org.trellisldp.vocabulary.ACL;
+import org.trellisldp.vocabulary.DC;
+import org.trellisldp.vocabulary.LDP;
+import org.trellisldp.vocabulary.OA;
+import org.trellisldp.vocabulary.RDF;
+import org.trellisldp.vocabulary.Trellis;
 
 import java.time.Instant;
 import java.util.List;

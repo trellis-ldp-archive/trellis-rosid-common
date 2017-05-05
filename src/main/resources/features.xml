@@ -6,6 +6,6 @@
 
     <feature>trellis-vocabulary</feature>
 
-    <bundle>mvn:edu.amherst.acdc/trellis-rosid-common/${project.version}</bundle>
+    <bundle>mvn:org.trellisldp/trellis-rosid-common/${project.version}</bundle>
   </feature>
 </features>

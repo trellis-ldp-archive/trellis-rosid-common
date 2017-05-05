@@ -1,6 +1,4 @@
 /*
- * Copyright Amherst College
- *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,15 +11,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.amherst.acdc.trellis.rosid.common;
+package org.trellisldp.rosid.common;
 
-import static edu.amherst.acdc.trellis.rosid.common.RDFUtils.endedAtQuad;
-import static edu.amherst.acdc.trellis.rosid.common.RDFUtils.getInstance;
-import static edu.amherst.acdc.trellis.rosid.common.RDFUtils.getParent;
-import static edu.amherst.acdc.trellis.vocabulary.AS.Create;
-import static edu.amherst.acdc.trellis.vocabulary.AS.Delete;
-import static edu.amherst.acdc.trellis.vocabulary.RDF.type;
-import static edu.amherst.acdc.trellis.vocabulary.Trellis.PreferAudit;
+import static org.trellisldp.rosid.common.RDFUtils.endedAtQuad;
+import static org.trellisldp.rosid.common.RDFUtils.getInstance;
+import static org.trellisldp.rosid.common.RDFUtils.getParent;
+import static org.trellisldp.vocabulary.AS.Create;
+import static org.trellisldp.vocabulary.AS.Delete;
+import static org.trellisldp.vocabulary.RDF.type;
+import static org.trellisldp.vocabulary.Trellis.PreferAudit;
 import static java.time.Instant.now;
 import static java.util.Objects.isNull;
 import static java.util.Optional.of;
@@ -33,10 +31,10 @@ import static org.apache.curator.framework.CuratorFrameworkFactory.newClient;
 import static org.apache.curator.framework.imps.CuratorFrameworkState.LATENT;
 import static org.slf4j.LoggerFactory.getLogger;
 
-import edu.amherst.acdc.trellis.api.Resource;
-import edu.amherst.acdc.trellis.spi.EventService;
-import edu.amherst.acdc.trellis.spi.ResourceService;
-import edu.amherst.acdc.trellis.spi.RuntimeRepositoryException;
+import org.trellisldp.api.Resource;
+import org.trellisldp.spi.EventService;
+import org.trellisldp.spi.ResourceService;
+import org.trellisldp.spi.RuntimeRepositoryException;
 
 import java.time.Instant;
 import java.util.Objects;
@@ -290,7 +288,7 @@ public abstract class AbstractResourceService implements ResourceService, AutoCl
             props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
         }
         if (isNull(props.getProperty("value.serializer"))) {
-            props.put("value.serializer", "edu.amherst.acdc.trellis.rosid.common.DatasetSerialization");
+            props.put("value.serializer", "org.trellisldp.rosid.common.DatasetSerialization");
         }
         return props;
     }

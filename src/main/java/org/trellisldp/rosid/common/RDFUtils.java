@@ -1,6 +1,4 @@
 /*
- * Copyright Amherst College
- *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,12 +11,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.amherst.acdc.trellis.rosid.common;
+package org.trellisldp.rosid.common;
 
-import static edu.amherst.acdc.trellis.vocabulary.PROV.endedAtTime;
-import static edu.amherst.acdc.trellis.vocabulary.PROV.wasGeneratedBy;
-import static edu.amherst.acdc.trellis.vocabulary.Trellis.PreferAudit;
-import static edu.amherst.acdc.trellis.vocabulary.XSD.dateTime;
+import static org.trellisldp.vocabulary.PROV.endedAtTime;
+import static org.trellisldp.vocabulary.PROV.wasGeneratedBy;
+import static org.trellisldp.vocabulary.Trellis.PreferAudit;
+import static org.trellisldp.vocabulary.XSD.dateTime;
 import static java.util.Optional.of;
 
 import java.time.Instant;

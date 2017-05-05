@@ -1,6 +1,4 @@
 /*
- * Copyright Amherst College
- *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,29 +11,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.amherst.acdc.trellis.rosid.common;
+package org.trellisldp.rosid.common;
 
-import static edu.amherst.acdc.trellis.rosid.common.Constants.TOPIC_CACHE;
-import static edu.amherst.acdc.trellis.rosid.common.Constants.TOPIC_INBOUND_ADD;
-import static edu.amherst.acdc.trellis.rosid.common.Constants.TOPIC_INBOUND_DELETE;
-import static edu.amherst.acdc.trellis.rosid.common.Constants.TOPIC_LDP_CONTAINMENT_ADD;
-import static edu.amherst.acdc.trellis.rosid.common.Constants.TOPIC_LDP_CONTAINMENT_DELETE;
-import static edu.amherst.acdc.trellis.rosid.common.Constants.TOPIC_LDP_MEMBERSHIP_ADD;
-import static edu.amherst.acdc.trellis.rosid.common.Constants.TOPIC_LDP_MEMBERSHIP_DELETE;
-import static edu.amherst.acdc.trellis.rosid.common.RDFUtils.getInstance;
-import static edu.amherst.acdc.trellis.rosid.common.RDFUtils.getParent;
-import static edu.amherst.acdc.trellis.rosid.common.RDFUtils.inDomain;
-import static edu.amherst.acdc.trellis.rosid.common.RDFUtils.objectIsSameResource;
-import static edu.amherst.acdc.trellis.rosid.common.RDFUtils.subjectIsSameResource;
-import static edu.amherst.acdc.trellis.vocabulary.AS.Create;
-import static edu.amherst.acdc.trellis.vocabulary.AS.Delete;
-import static edu.amherst.acdc.trellis.vocabulary.Fedora.PreferInboundReferences;
-import static edu.amherst.acdc.trellis.vocabulary.LDP.PreferContainment;
-import static edu.amherst.acdc.trellis.vocabulary.LDP.contains;
-import static edu.amherst.acdc.trellis.vocabulary.RDF.type;
-import static edu.amherst.acdc.trellis.vocabulary.Trellis.PreferAudit;
-import static edu.amherst.acdc.trellis.vocabulary.Trellis.PreferServerManaged;
-import static edu.amherst.acdc.trellis.vocabulary.Trellis.PreferUserManaged;
+import static org.trellisldp.rosid.common.Constants.TOPIC_CACHE;
+import static org.trellisldp.rosid.common.Constants.TOPIC_INBOUND_ADD;
+import static org.trellisldp.rosid.common.Constants.TOPIC_INBOUND_DELETE;
+import static org.trellisldp.rosid.common.Constants.TOPIC_LDP_CONTAINMENT_ADD;
+import static org.trellisldp.rosid.common.Constants.TOPIC_LDP_CONTAINMENT_DELETE;
+import static org.trellisldp.rosid.common.Constants.TOPIC_LDP_MEMBERSHIP_ADD;
+import static org.trellisldp.rosid.common.Constants.TOPIC_LDP_MEMBERSHIP_DELETE;
+import static org.trellisldp.rosid.common.RDFUtils.getInstance;
+import static org.trellisldp.rosid.common.RDFUtils.getParent;
+import static org.trellisldp.rosid.common.RDFUtils.inDomain;
+import static org.trellisldp.rosid.common.RDFUtils.objectIsSameResource;
+import static org.trellisldp.rosid.common.RDFUtils.subjectIsSameResource;
+import static org.trellisldp.vocabulary.AS.Create;
+import static org.trellisldp.vocabulary.AS.Delete;
+import static org.trellisldp.vocabulary.Fedora.PreferInboundReferences;
+import static org.trellisldp.vocabulary.LDP.PreferContainment;
+import static org.trellisldp.vocabulary.LDP.contains;
+import static org.trellisldp.vocabulary.RDF.type;
+import static org.trellisldp.vocabulary.Trellis.PreferAudit;
+import static org.trellisldp.vocabulary.Trellis.PreferServerManaged;
+import static org.trellisldp.vocabulary.Trellis.PreferUserManaged;
 import static java.util.Optional.of;
 import static java.util.stream.Collectors.groupingBy;
 import static org.slf4j.LoggerFactory.getLogger;

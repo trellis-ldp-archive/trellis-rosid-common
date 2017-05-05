@@ -1,6 +1,4 @@
 /*
- * Copyright Amherst College
- *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,9 +11,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.amherst.acdc.trellis.rosid.common;
+package org.trellisldp.rosid.common;
 
-import static edu.amherst.acdc.trellis.vocabulary.RDF.type;
+import static org.trellisldp.vocabulary.RDF.type;
 import static java.time.Instant.now;
 import static com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS;
 import static org.junit.Assert.assertEquals;
@@ -29,10 +27,10 @@ import java.util.Optional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import edu.amherst.acdc.trellis.vocabulary.DC;
-import edu.amherst.acdc.trellis.vocabulary.LDP;
-import edu.amherst.acdc.trellis.vocabulary.Trellis;
-import edu.amherst.acdc.trellis.vocabulary.XSD;
+import org.trellisldp.vocabulary.DC;
+import org.trellisldp.vocabulary.LDP;
+import org.trellisldp.vocabulary.Trellis;
+import org.trellisldp.vocabulary.XSD;
 import org.apache.commons.rdf.api.Dataset;
 import org.apache.commons.rdf.api.IRI;
 import org.apache.commons.rdf.api.Literal;
