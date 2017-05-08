@@ -20,13 +20,6 @@ import static java.util.stream.Collectors.toList;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import org.trellisldp.vocabulary.ACL;
-import org.trellisldp.vocabulary.DC;
-import org.trellisldp.vocabulary.LDP;
-import org.trellisldp.vocabulary.OA;
-import org.trellisldp.vocabulary.RDF;
-import org.trellisldp.vocabulary.Trellis;
-
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -36,6 +29,12 @@ import org.apache.commons.rdf.api.Dataset;
 import org.apache.commons.rdf.api.IRI;
 import org.apache.commons.rdf.api.Literal;
 import org.apache.commons.rdf.api.Triple;
+import org.trellisldp.vocabulary.ACL;
+import org.trellisldp.vocabulary.DC;
+import org.trellisldp.vocabulary.LDP;
+import org.trellisldp.vocabulary.OA;
+import org.trellisldp.vocabulary.RDF;
+import org.trellisldp.vocabulary.Trellis;
 
 /**
  * @author acoburn

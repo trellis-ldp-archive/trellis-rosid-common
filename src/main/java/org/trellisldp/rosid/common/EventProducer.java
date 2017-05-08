@@ -13,6 +13,9 @@
  */
 package org.trellisldp.rosid.common;
 
+import static java.util.Optional.of;
+import static java.util.stream.Collectors.groupingBy;
+import static org.slf4j.LoggerFactory.getLogger;
 import static org.trellisldp.rosid.common.Constants.TOPIC_CACHE;
 import static org.trellisldp.rosid.common.Constants.TOPIC_INBOUND_ADD;
 import static org.trellisldp.rosid.common.Constants.TOPIC_INBOUND_DELETE;
@@ -34,9 +37,6 @@ import static org.trellisldp.vocabulary.RDF.type;
 import static org.trellisldp.vocabulary.Trellis.PreferAudit;
 import static org.trellisldp.vocabulary.Trellis.PreferServerManaged;
 import static org.trellisldp.vocabulary.Trellis.PreferUserManaged;
-import static java.util.Optional.of;
-import static java.util.stream.Collectors.groupingBy;
-import static org.slf4j.LoggerFactory.getLogger;
 
 import java.util.ArrayList;
 import java.util.List;

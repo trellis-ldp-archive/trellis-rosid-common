@@ -13,13 +13,6 @@
  */
 package org.trellisldp.rosid.common;
 
-import static org.trellisldp.rosid.common.RDFUtils.endedAtQuad;
-import static org.trellisldp.rosid.common.RDFUtils.getInstance;
-import static org.trellisldp.rosid.common.RDFUtils.getParent;
-import static org.trellisldp.vocabulary.AS.Create;
-import static org.trellisldp.vocabulary.AS.Delete;
-import static org.trellisldp.vocabulary.RDF.type;
-import static org.trellisldp.vocabulary.Trellis.PreferAudit;
 import static java.time.Instant.now;
 import static java.util.Objects.isNull;
 import static java.util.Optional.of;
@@ -30,11 +23,13 @@ import static org.apache.commons.codec.digest.DigestUtils.md5Hex;
 import static org.apache.curator.framework.CuratorFrameworkFactory.newClient;
 import static org.apache.curator.framework.imps.CuratorFrameworkState.LATENT;
 import static org.slf4j.LoggerFactory.getLogger;
-
-import org.trellisldp.api.Resource;
-import org.trellisldp.spi.EventService;
-import org.trellisldp.spi.ResourceService;
-import org.trellisldp.spi.RuntimeRepositoryException;
+import static org.trellisldp.rosid.common.RDFUtils.endedAtQuad;
+import static org.trellisldp.rosid.common.RDFUtils.getInstance;
+import static org.trellisldp.rosid.common.RDFUtils.getParent;
+import static org.trellisldp.vocabulary.AS.Create;
+import static org.trellisldp.vocabulary.AS.Delete;
+import static org.trellisldp.vocabulary.RDF.type;
+import static org.trellisldp.vocabulary.Trellis.PreferAudit;
 
 import java.time.Instant;
 import java.util.Optional;
@@ -55,6 +50,10 @@ import org.apache.curator.retry.BoundedExponentialBackoffRetry;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
 import org.slf4j.Logger;
+import org.trellisldp.api.Resource;
+import org.trellisldp.spi.EventService;
+import org.trellisldp.spi.ResourceService;
+import org.trellisldp.spi.RuntimeRepositoryException;
 
 /**
  * @author acoburn

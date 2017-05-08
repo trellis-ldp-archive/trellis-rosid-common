@@ -13,11 +13,11 @@
  */
 package org.trellisldp.rosid.common;
 
+import static java.util.Optional.of;
 import static org.trellisldp.vocabulary.PROV.endedAtTime;
 import static org.trellisldp.vocabulary.PROV.wasGeneratedBy;
 import static org.trellisldp.vocabulary.Trellis.PreferAudit;
 import static org.trellisldp.vocabulary.XSD.dateTime;
-import static java.util.Optional.of;
 
 import java.time.Instant;
 import java.util.Optional;
