@@ -37,7 +37,6 @@ import org.trellisldp.spi.ResourceService;
 import org.trellisldp.spi.RuntimeRepositoryException;
 
 import java.time.Instant;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.stream.Stream;
@@ -72,15 +71,16 @@ public abstract class AbstractResourceService implements ResourceService, AutoCl
 
     protected final CuratorFramework curator;
 
-    protected EventService evtSvc;
+    protected final EventService evtSvc;
 
-    protected RDF rdf = getInstance();
+    protected final RDF rdf = getInstance();
 
     /**
      * Create an AbstractResourceService
+     * @param service the event service
      */
-    public AbstractResourceService() {
-        this(new KafkaProducer<>(kafkaProducerProps()),
+    public AbstractResourceService(final EventService service) {
+        this(service, new KafkaProducer<>(kafkaProducerProps()),
                 newClient(System.getProperty("zk.connectString"),
                     new BoundedExponentialBackoffRetry(
                         Integer.parseInt(System.getProperty("zk.retry.ms", "2000")),
@@ -90,11 +90,14 @@ public abstract class AbstractResourceService implements ResourceService, AutoCl
 
     /**
      * Create an AbstractResourceService with the given properties
+     * @param service the event service
      * @param kafkaProperties the kafka properties
      * @param zkProperties the zookeeper properties
      */
-    public AbstractResourceService(final Properties kafkaProperties, final Properties zkProperties) {
-        this(new KafkaProducer<>(addDefaults(kafkaProperties)), newClient(zkProperties.getProperty("connectString"),
+    public AbstractResourceService(final EventService service, final Properties kafkaProperties,
+            final Properties zkProperties) {
+        this(service, new KafkaProducer<>(addDefaults(kafkaProperties)),
+                newClient(zkProperties.getProperty("connectString"),
                     new BoundedExponentialBackoffRetry(
                         Integer.parseInt(zkProperties.getProperty("retry.ms", "2000")),
                         Integer.parseInt(zkProperties.getProperty("retry.max.ms", "30000")),
@@ -103,10 +106,13 @@ public abstract class AbstractResourceService implements ResourceService, AutoCl
 
     /**
      * Create an AbstractResourceService with the given producer
+     * @param service the event service
      * @param producer the kafka producer
      * @param curator the zookeeper curator
      */
-    public AbstractResourceService(final Producer<String, Dataset> producer, final CuratorFramework curator) {
+    public AbstractResourceService(final EventService service, final Producer<String, Dataset> producer,
+            final CuratorFramework curator) {
+        this.evtSvc = service;
         this.producer = producer;
         this.curator = curator;
         if (LATENT.equals(curator.getState())) {
@@ -117,20 +123,6 @@ public abstract class AbstractResourceService implements ResourceService, AutoCl
         } catch (final Exception ex) {
             LOGGER.error("Could not create zk session node: {}", ex.getMessage());
             throw new RuntimeRepositoryException(ex);
-        }
-    }
-
-    @Override
-    public void bind(final EventService svc) {
-        LOGGER.info("Binding EventService to RepositoryService");
-        evtSvc = svc;
-    }
-
-    @Override
-    public void unbind(final EventService svc) {
-        if (Objects.equals(evtSvc, svc)) {
-            LOGGER.info("Unbinding EventService from RepositoryService");
-            evtSvc = null;
         }
     }
 
