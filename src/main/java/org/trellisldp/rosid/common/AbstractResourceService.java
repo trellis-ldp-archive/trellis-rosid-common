@@ -70,7 +70,7 @@ public abstract class AbstractResourceService implements ResourceService, AutoCl
 
     protected final CuratorFramework curator;
 
-    protected final EventService evtSvc;
+    protected final EventService eventService;
 
     protected final RDF rdf = getInstance();
 
@@ -111,7 +111,7 @@ public abstract class AbstractResourceService implements ResourceService, AutoCl
      */
     public AbstractResourceService(final EventService service, final Producer<String, Dataset> producer,
             final CuratorFramework curator) {
-        this.evtSvc = service;
+        this.eventService = service;
         this.producer = producer;
         this.curator = curator;
         if (LATENT.equals(curator.getState())) {
