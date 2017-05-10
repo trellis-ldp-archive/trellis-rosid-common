@@ -70,13 +70,13 @@ public class DatasetSerializationTest {
     public void testDeserialization() {
         final String data = "" +
             "<trellis:repository/resource> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> " +
-            "<http://www.w3.org/ns/ldp#Container> <http://acdc.amherst.edu/ns/trellis#PreferServerManaged> .\n" +
+            "<http://www.w3.org/ns/ldp#Container> <http://www.trellisldp.org/ns/trellis#PreferServerManaged> .\n" +
             "<trellis:repository/resource> <http://purl.org/dc/terms/title> " +
-            "\"A title\"@eng <http://acdc.amherst.edu/ns/trellis#PreferUserManaged> .\n" +
+            "\"A title\"@eng <http://www.trellisldp.org/ns/trellis#PreferUserManaged> .\n" +
             "<trellis:repository/resource> <http://purl.org/dc/terms/description> " +
-            "\"A longer description\"@eng <http://acdc.amherst.edu/ns/trellis#PreferUserManaged> .\n" +
+            "\"A longer description\"@eng <http://www.trellisldp.org/ns/trellis#PreferUserManaged> .\n" +
             "<trellis:repository/resource> <http://purl.org/dc/terms/subject> " +
-            "<http://example.org/subject/1> <http://acdc.amherst.edu/ns/trellis#PreferUserManaged> .\n";
+            "<http://example.org/subject/1> <http://www.trellisldp.org/ns/trellis#PreferUserManaged> .\n";
         final Dataset msg = serializer.deserialize("topic", data.getBytes(UTF_8));
         assertTrue(msg.contains(title));
         assertTrue(msg.contains(description));
