@@ -18,6 +18,7 @@ import static org.apache.commons.codec.digest.DigestUtils.md5Hex;
 import static org.apache.curator.framework.CuratorFrameworkFactory.newClient;
 import static org.apache.curator.framework.imps.CuratorFrameworkState.LATENT;
 import static org.slf4j.LoggerFactory.getLogger;
+import static org.trellisldp.rosid.common.RosidConstants.ZNODE_COORDINATION;
 import static org.trellisldp.rosid.common.RDFUtils.getInstance;
 
 import java.util.Properties;
@@ -48,8 +49,6 @@ abstract class LockableResourceService implements ResourceService, AutoCloseable
 
     protected final RDF rdf = getInstance();
 
-    private final String SESSION_ZNODE = "/session";
-
     protected LockableResourceService(final Properties kafkaProperties, final Properties zkProperties) {
         this(new KafkaProducer<>(addDefaults(kafkaProperties)),
                 newClient(zkProperties.getProperty("connectString"),
@@ -66,7 +65,7 @@ abstract class LockableResourceService implements ResourceService, AutoCloseable
             this.curator.start();
         }
         try {
-            this.curator.createContainers(SESSION_ZNODE);
+            this.curator.createContainers(ZNODE_COORDINATION);
         } catch (final Exception ex) {
             LOGGER.error("Could not create zk session node: {}", ex.getMessage());
             throw new RuntimeRepositoryException(ex);
@@ -74,7 +73,7 @@ abstract class LockableResourceService implements ResourceService, AutoCloseable
     }
 
     protected InterProcessLock getLock(final IRI identifier) {
-        final String path = SESSION_ZNODE + "/" + md5Hex(identifier.getIRIString());
+        final String path = ZNODE_COORDINATION + "/" + md5Hex(identifier.getIRIString());
         return new InterProcessSemaphoreMutex(curator, path);
     }
 

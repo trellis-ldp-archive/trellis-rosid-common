@@ -16,7 +16,7 @@ package org.trellisldp.rosid.common;
 /**
  * @author acoburn
  */
-public final class Constants {
+public final class RosidConstants {
 
     /**
      * The topic that notifies about object changes
@@ -63,7 +63,12 @@ public final class Constants {
      */
     public static final String TOPIC_CACHE = "trellis.cache";
 
-    private Constants() {
+    /**
+     * The ZooKeeper coordination parent node
+     */
+    public static final String ZNODE_COORDINATION = "/session";
+
+    private RosidConstants() {
         // prevent instantiation
     }
 }
