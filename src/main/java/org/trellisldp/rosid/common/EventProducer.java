@@ -30,6 +30,7 @@ import static org.trellisldp.rosid.common.RosidConstants.TOPIC_LDP_MEMBERSHIP_AD
 import static org.trellisldp.rosid.common.RosidConstants.TOPIC_LDP_MEMBERSHIP_DELETE;
 import static org.trellisldp.vocabulary.AS.Create;
 import static org.trellisldp.vocabulary.AS.Delete;
+import static org.trellisldp.vocabulary.DC.modified;
 import static org.trellisldp.vocabulary.Fedora.PreferInboundReferences;
 import static org.trellisldp.vocabulary.LDP.PreferContainment;
 import static org.trellisldp.vocabulary.LDP.contains;
@@ -158,7 +159,9 @@ class EventProducer {
      * @return the removed quads
      */
     public Stream<? extends Quad> getRemoved() {
-        return existing.stream().filter(q -> !dataset.contains(q));
+        return existing.stream().filter(q -> !dataset.contains(q))
+            .filter(q -> q.getGraphName().filter(PreferServerManaged::equals).isPresent() &&
+                    modified.equals(q.getPredicate()));
     }
 
     /**
@@ -166,9 +169,8 @@ class EventProducer {
      * @param quads the quads
      */
     public void into(final Stream<? extends Quad> quads) {
-        quads.filter(q -> q.getGraphName().isPresent() &&
-                (PreferUserManaged.equals(q.getGraphName().get()) ||
-                 PreferServerManaged.equals(q.getGraphName().get())))
+        quads.filter(q -> q.getGraphName()
+                .filter(g -> PreferUserManaged.equals(g) || PreferServerManaged.equals(g)).isPresent())
             .forEach(existing::add);
     }
 }

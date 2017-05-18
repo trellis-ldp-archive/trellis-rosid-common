@@ -56,15 +56,15 @@ dependencies {
     compile group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: jacksonVersion
     compile group: 'com.fasterxml.jackson.datatype', name: 'jackson-datatype-jsr310', version: jacksonVersion
     compile group: 'commons-codec', name: 'commons-codec', version: commonsCodecVersion
-    compile group: 'org.trellisldp', name: 'trellis-api', version: trellisApiVersion
-    compile group: 'org.trellisldp', name: 'trellis-spi', version: trellisSpiVersion
-    compile group: 'org.trellisldp', name: 'trellis-vocabulary', version: trellisVocabularyVersion
     compile group: 'org.apache.commons', name: 'commons-rdf-api', version: commonsRdfVersion
     compile group: 'org.apache.commons', name: 'commons-rdf-jena', version: commonsRdfVersion
     compile group: 'org.apache.curator', name: 'curator-recipes', version: curatorVersion
     compile group: 'org.apache.kafka', name: 'kafka-clients', version: kafkaVersion
     compile group: 'org.apache.kafka', name: 'kafka-streams', version: kafkaVersion
     compile group: 'org.slf4j', name: 'slf4j-api', version: slf4jVersion
+    compile group: 'org.trellisldp', name: 'trellis-api', version: trellisApiVersion
+    compile group: 'org.trellisldp', name: 'trellis-spi', version: trellisSpiVersion
+    compile group: 'org.trellisldp', name: 'trellis-vocabulary', version: trellisVocabularyVersion
 
     testCompile group: 'junit', name: 'junit', version: junitVersion
     testCompile group: 'org.apache.curator', name: 'curator-test', version: curatorVersion
