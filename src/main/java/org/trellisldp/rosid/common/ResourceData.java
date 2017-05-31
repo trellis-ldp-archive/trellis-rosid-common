@@ -42,27 +42,27 @@ import org.trellisldp.vocabulary.Trellis;
 public class ResourceData {
 
     /**
-     * The datastream-specific data
+     * The binary-specific data
      */
-    public static class DatastreamData {
+    public static class BinaryData {
         /**
-         * The datastream identifier
+         * The binary object identifier
          */
         @JsonProperty("@id")
         public String id;
 
         /**
-         * The datastream format (MIMEType)
+         * The binary object format (MIMEType)
          */
         public String format;
 
         /**
-         * The datastream size
+         * The binary object size
          */
         public Long size;
 
         /**
-         * The modification date of the datastream
+         * The modification date of the binary object
          */
         public Instant modified;
     }
@@ -92,9 +92,9 @@ public class ResourceData {
     public List<String> userTypes;
 
     /**
-     * The datastream data, if available
+     * The binary object data, if available
      */
-    public DatastreamData datastream;
+    public BinaryData binary;
 
     /**
      * An ldp:inbox for the resource, if available
@@ -162,20 +162,20 @@ public class ResourceData {
             graph.stream(identifier, RDF.type, null).findFirst().map(objectUriAsString)
                 .ifPresent(type -> rd.ldpType = type);
 
-            // Populate datastream, if present
+            // Populate binary, if present
             graph.stream(identifier, DC.hasPart, null).findFirst().map(Triple::getObject).map(x -> (IRI) x)
                     .ifPresent(id -> {
-                rd.datastream = new ResourceData.DatastreamData();
-                rd.datastream.id = id.getIRIString();
+                rd.binary = new ResourceData.BinaryData();
+                rd.binary.id = id.getIRIString();
 
                 graph.stream(id, DC.modified, null).findFirst().map(objectLiteralAsString).map(Instant::parse)
-                    .ifPresent(date -> rd.datastream.modified = date);
+                    .ifPresent(date -> rd.binary.modified = date);
 
                 graph.stream(id, DC.format, null).findFirst().map(objectLiteralAsString)
-                    .ifPresent(format -> rd.datastream.format = format);
+                    .ifPresent(format -> rd.binary.format = format);
 
                 graph.stream(id, DC.extent, null).findFirst().map(objectLiteralAsString).map(Long::parseLong)
-                    .ifPresent(size -> rd.datastream.size = size);
+                    .ifPresent(size -> rd.binary.size = size);
             });
         });
 

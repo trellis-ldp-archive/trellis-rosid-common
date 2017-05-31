@@ -61,9 +61,9 @@ public class ResourceDataTest {
         assertTrue(res.userTypes.contains("http://example.org/ns/CustomType"));
         assertEquals("http://receiver.example.org/inbox", res.inbox);
         assertEquals("trellis:repository/acl/public", res.accessControl);
-        assertEquals("file:/path/to/datastream", res.datastream.id);
-        assertEquals("image/jpeg", res.datastream.format);
-        assertEquals(new Long(103527L), res.datastream.size);
+        assertEquals("file:/path/to/binary", res.binary.id);
+        assertEquals("image/jpeg", res.binary.format);
+        assertEquals(new Long(103527L), res.binary.size);
         assertNull(res.insertedContentRelation);
     }
 
@@ -91,7 +91,7 @@ public class ResourceDataTest {
     @Test
     public void testNonRDFSource() {
         final IRI identifier = rdf.createIRI("trellis:repository/resource");
-        final IRI datastream = rdf.createIRI("file://path/to/resource");
+        final IRI binary = rdf.createIRI("file://path/to/resource");
         final IRI inbox = rdf.createIRI("http://example.com/receiver/inbox");
         final Literal format = rdf.createLiteral("image/jpeg");
         final Literal extent = rdf.createLiteral("12345", XSD.long_);
@@ -101,10 +101,10 @@ public class ResourceDataTest {
         dataset.add(rdf.createQuad(Trellis.PreferUserManaged, identifier, LDP.inbox, inbox));
         dataset.add(rdf.createQuad(Trellis.PreferServerManaged, identifier, type, LDP.NonRDFSource));
         dataset.add(rdf.createQuad(Trellis.PreferServerManaged, identifier, DC.modified, modified));
-        dataset.add(rdf.createQuad(Trellis.PreferServerManaged, identifier, DC.hasPart, datastream));
-        dataset.add(rdf.createQuad(Trellis.PreferServerManaged, datastream, DC.modified, modified));
-        dataset.add(rdf.createQuad(Trellis.PreferServerManaged, datastream, DC.format, format));
-        dataset.add(rdf.createQuad(Trellis.PreferServerManaged, datastream, DC.extent, extent));
+        dataset.add(rdf.createQuad(Trellis.PreferServerManaged, identifier, DC.hasPart, binary));
+        dataset.add(rdf.createQuad(Trellis.PreferServerManaged, binary, DC.modified, modified));
+        dataset.add(rdf.createQuad(Trellis.PreferServerManaged, binary, DC.format, format));
+        dataset.add(rdf.createQuad(Trellis.PreferServerManaged, binary, DC.extent, extent));
 
 
         final Optional<ResourceData> rd = ResourceData.from(identifier, dataset);
@@ -114,11 +114,11 @@ public class ResourceDataTest {
             assertEquals(inbox.getIRIString(), data.inbox);
             assertEquals(LDP.NonRDFSource.getIRIString(), data.ldpType);
             assertEquals(time, data.modified);
-            assertNotNull(data.datastream);
-            assertEquals(datastream.getIRIString(), data.datastream.id);
-            assertEquals(12345L, (long) data.datastream.size);
-            assertEquals(format.getLexicalForm(), data.datastream.format);
-            assertEquals(time, data.datastream.modified);
+            assertNotNull(data.binary);
+            assertEquals(binary.getIRIString(), data.binary.id);
+            assertEquals(12345L, (long) data.binary.size);
+            assertEquals(format.getLexicalForm(), data.binary.format);
+            assertEquals(time, data.binary.modified);
         });
     }
 }

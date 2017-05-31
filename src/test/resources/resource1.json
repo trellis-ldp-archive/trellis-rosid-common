@@ -2,8 +2,8 @@
     "@context" : "http://www.trellisldp.org/ns/trellisresource.json" ,
     "@id" : "trellis:repository/resource1" ,
     "@type" : "http://www.w3.org/ns/ldp#Container" ,
-    "datastream" : {
-        "@id" : "file:/path/to/datastream" ,
+    "binary" : {
+        "@id" : "file:/path/to/binary" ,
         "format" : "image/jpeg" ,
         "size" : 103527,
         "modified" : "2017-02-07T12:18:10Z" } ,
