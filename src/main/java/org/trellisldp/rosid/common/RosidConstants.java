@@ -64,6 +64,11 @@ public final class RosidConstants {
     public static final String TOPIC_CACHE = "trellis.cache";
 
     /**
+     * The internal topic used for notifications
+     */
+    public static final String TOPIC_INTERNAL_NOTIFICATION = "trellis.internal.event";
+
+    /**
      * The ZooKeeper coordination parent node
      */
     public static final String ZNODE_COORDINATION = "/session";
