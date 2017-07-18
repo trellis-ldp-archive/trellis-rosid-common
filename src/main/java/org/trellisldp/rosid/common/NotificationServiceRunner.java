@@ -29,16 +29,6 @@ class NotificationServiceRunner extends AbstractConsumerRunner {
 
     /**
      * A runnable object which connects a Kafka topic to the event service
-     * @param props the Kafka properties
-     * @param service the event service
-     */
-    public NotificationServiceRunner(final Properties props, final EventService service) {
-        super(props);
-        this.service = service;
-    }
-
-    /**
-     * A runnable object which connects a Kafka topic to the event service
      * @param service the event service
      */
     public NotificationServiceRunner(final EventService service) {
@@ -51,8 +41,17 @@ class NotificationServiceRunner extends AbstractConsumerRunner {
      * @param props the Kafka properties
      * @param service the event service
      */
-    public NotificationServiceRunner(final Consumer<String, Dataset> consumer,
-            final EventService service) {
+    public NotificationServiceRunner(final Properties props, final EventService service) {
+        super(props);
+        this.service = service;
+    }
+
+    /**
+     * A runnable object which connects a Kafka topic to the event service
+     * @param consumer the Kafka consumer
+     * @param service the event service
+     */
+    public NotificationServiceRunner(final Consumer<String, Dataset> consumer, final EventService service) {
         super(consumer);
         this.service = service;
     }

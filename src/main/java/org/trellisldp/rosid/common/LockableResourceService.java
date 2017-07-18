@@ -13,12 +13,14 @@
  */
 package org.trellisldp.rosid.common;
 
+import static java.util.Collections.singleton;
 import static java.util.Objects.isNull;
 import static org.apache.commons.codec.digest.DigestUtils.md5Hex;
 import static org.apache.curator.framework.CuratorFrameworkFactory.newClient;
 import static org.apache.curator.framework.imps.CuratorFrameworkState.LATENT;
 import static org.slf4j.LoggerFactory.getLogger;
 import static org.trellisldp.rosid.common.RDFUtils.getInstance;
+import static org.trellisldp.rosid.common.RosidConstants.TOPIC_INTERNAL_NOTIFICATION;
 import static org.trellisldp.rosid.common.RosidConstants.ZNODE_COORDINATION;
 
 import java.util.Properties;
@@ -30,9 +32,12 @@ import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.locks.InterProcessLock;
 import org.apache.curator.framework.recipes.locks.InterProcessSemaphoreMutex;
 import org.apache.curator.retry.BoundedExponentialBackoffRetry;
+import org.apache.kafka.clients.consumer.Consumer;
+import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
 import org.slf4j.Logger;
+import org.trellisldp.spi.EventService;
 import org.trellisldp.spi.ResourceService;
 import org.trellisldp.spi.RuntimeRepositoryException;
 
@@ -45,22 +50,27 @@ abstract class LockableResourceService implements ResourceService, AutoCloseable
 
     protected final Producer<String, Dataset> producer;
 
+    protected final NotificationServiceRunner notificationService;
+
     protected final CuratorFramework curator;
 
     protected final RDF rdf = getInstance();
 
-    protected LockableResourceService(final Properties kafkaProperties, final Properties zkProperties) {
-        this(new KafkaProducer<>(addDefaults(kafkaProperties)),
+    protected LockableResourceService(final Properties kafkaProperties, final Properties zkProperties,
+            final EventService eventService) {
+        this(new KafkaProducer<>(addDefaults(kafkaProperties)), new KafkaConsumer<>(addDefaults(kafkaProperties)),
                 newClient(zkProperties.getProperty("connectString"),
                     new BoundedExponentialBackoffRetry(
                         Integer.parseInt(zkProperties.getProperty("retry.ms", "2000")),
                         Integer.parseInt(zkProperties.getProperty("retry.max.ms", "30000")),
-                        Integer.parseInt(zkProperties.getProperty("retry.max", "10")))));
+                        Integer.parseInt(zkProperties.getProperty("retry.max", "10")))), eventService);
     }
 
-    protected LockableResourceService(final Producer<String, Dataset> producer, final CuratorFramework curator) {
+    protected LockableResourceService(final Producer<String, Dataset> producer,
+            final Consumer<String, Dataset> consumer, final CuratorFramework curator, final EventService eventService) {
         this.producer = producer;
         this.curator = curator;
+        this.notificationService = new NotificationServiceRunner(consumer, eventService);
         if (LATENT.equals(curator.getState())) {
             this.curator.start();
         }
@@ -70,6 +80,8 @@ abstract class LockableResourceService implements ResourceService, AutoCloseable
             LOGGER.error("Could not create zk session node: {}", ex.getMessage());
             throw new RuntimeRepositoryException(ex);
         }
+        this.notificationService.subscribe(singleton(TOPIC_INTERNAL_NOTIFICATION));
+        new Thread(notificationService).start();
     }
 
     protected InterProcessLock getLock(final IRI identifier) {
@@ -81,6 +93,7 @@ abstract class LockableResourceService implements ResourceService, AutoCloseable
     public void close() {
         producer.close();
         curator.close();
+        notificationService.shutdown();
     }
 
     private static Properties addDefaults(final Properties props) {

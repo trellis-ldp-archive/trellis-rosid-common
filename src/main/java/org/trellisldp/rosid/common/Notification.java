@@ -58,7 +58,7 @@ class Notification implements Event {
     public Notification(final String target, final Dataset data) {
         this.target = rdf.createIRI(target);
         this.data = data;
-        this.identifier = rdf.createIRI("urn:uuid:" + randomUUID().toString());
+        this.identifier = rdf.createIRI("urn:uuid:" + randomUUID());
         this.created = now();
     }
 

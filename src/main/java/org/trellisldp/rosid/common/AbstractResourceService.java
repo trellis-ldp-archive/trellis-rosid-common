@@ -14,13 +14,11 @@
 package org.trellisldp.rosid.common;
 
 import static java.time.Instant.now;
-import static java.util.Collections.singleton;
 import static java.util.Optional.of;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.stream.Stream.concat;
 import static java.util.stream.Stream.empty;
 import static org.slf4j.LoggerFactory.getLogger;
-import static org.trellisldp.rosid.common.RosidConstants.TOPIC_INTERNAL_NOTIFICATION;
 import static org.trellisldp.rosid.common.RDFUtils.endedAtQuad;
 import static org.trellisldp.rosid.common.RDFUtils.getParent;
 import static org.trellisldp.vocabulary.AS.Create;
@@ -56,8 +54,6 @@ public abstract class AbstractResourceService extends LockableResourceService {
 
     protected final String SKOLEM_BNODE_PREFIX = "trellis:bnode/";
 
-    private final NotificationServiceRunner notificationService;
-
     /**
      * Create an AbstractResourceService with the given properties
      * @param service the event service
@@ -66,10 +62,7 @@ public abstract class AbstractResourceService extends LockableResourceService {
      */
     public AbstractResourceService(final EventService service, final Properties kafkaProperties,
             final Properties zkProperties) {
-        super(kafkaProperties, zkProperties);
-        notificationService = new NotificationServiceRunner(kafkaProperties, service);
-        notificationService.subscribe(singleton(TOPIC_INTERNAL_NOTIFICATION));
-        new Thread(notificationService).start();
+        super(kafkaProperties, zkProperties, service);
     }
 
     /**
@@ -81,10 +74,7 @@ public abstract class AbstractResourceService extends LockableResourceService {
      */
     public AbstractResourceService(final EventService service, final Producer<String, Dataset> producer,
             final Consumer<String, Dataset> consumer, final CuratorFramework curator) {
-        super(producer, curator);
-        notificationService = new NotificationServiceRunner(consumer, service);
-        notificationService.subscribe(singleton(TOPIC_INTERNAL_NOTIFICATION));
-        new Thread(notificationService).start();
+        super(producer, consumer, curator, service);
     }
 
     /**
@@ -177,12 +167,6 @@ public abstract class AbstractResourceService extends LockableResourceService {
             }
         }
         return term;
-    }
-
-    @Override
-    public void close() {
-        super.close();
-        notificationService.shutdown();
     }
 
     @Override
