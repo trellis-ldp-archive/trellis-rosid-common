@@ -42,33 +42,45 @@ abstract class AbstractConsumerRunner implements Runnable {
 
     /**
      * A base consumer runner class, using the system-defined Kafka Consumer
-     * @param topics the kafka topics to consume
      */
-    protected AbstractConsumerRunner(final Collection<TopicPartition> topics) {
-        this(topics, new KafkaConsumer<>(kafkaConsumerProps()));
+    protected AbstractConsumerRunner() {
+        this(new KafkaConsumer<>(kafkaConsumerProps()));
         LOGGER.info("Initializing a kafka consumer with system-defined properties");
     }
 
     /**
      * A base consumer runner class, using the system-defined Kafka Consumer
-     * @param topics the kafka topics to consume
      * @param properties the user-defined properties
      */
-    protected AbstractConsumerRunner(final Collection<TopicPartition> topics, final Properties properties) {
-        this(topics, new KafkaConsumer<>(properties));
+    protected AbstractConsumerRunner(final Properties properties) {
+        this(new KafkaConsumer<>(properties));
         LOGGER.info("Initializing a kafka consumer with user-defined properties");
     }
 
     /**
      * A base consumer runner class
-     * @param topics the kafka topics to consume
      * @param consumer the kafka consumer to use
      */
-    protected AbstractConsumerRunner(final Collection<TopicPartition> topics,
-            final Consumer<String, Dataset> consumer) {
+    protected AbstractConsumerRunner(final Consumer<String, Dataset> consumer) {
         requireNonNull(consumer, "the consumer may not be null!");
-        consumer.assign(topics);
+        //consumer.assign(topics);
         this.consumer = consumer;
+    }
+
+    /**
+     * Manually assign the topic partitions
+     * @param topics a collection of topic partitions
+     */
+    public void assign(final Collection<TopicPartition> topics) {
+        consumer.assign(topics);
+    }
+
+    /**
+     * Dynamically subscribe to a collection of topics
+     * @param topics a collection of topics to subscribe to
+     */
+    public void subscribe(final Collection<String> topics) {
+        consumer.subscribe(topics);
     }
 
     @Override

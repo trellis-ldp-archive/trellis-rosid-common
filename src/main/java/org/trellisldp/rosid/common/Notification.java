@@ -50,17 +50,24 @@ class Notification implements Event {
     private final Dataset data;
     private final Instant created;
 
-    public Notification(final String identifier, final Dataset data) {
-        this.target = rdf.createIRI(identifier);
+    /**
+     * Create a new notification
+     * @param target the target resource
+     * @param data the corresponding data
+     */
+    public Notification(final String target, final Dataset data) {
+        this.target = rdf.createIRI(target);
         this.data = data;
         this.identifier = rdf.createIRI("urn:uuid:" + randomUUID().toString());
         this.created = now();
     }
 
+    @Override
     public IRI getIdentifier() {
         return identifier;
     }
 
+    @Override
     public Collection<IRI> getAgents() {
         return data.getGraph(Trellis.PreferAudit)
             .map(graph -> graph.stream(null, PROV.wasAssociatedWith, null).map(Triple::getObject)
@@ -68,10 +75,12 @@ class Notification implements Event {
             .orElse(emptyList());
     }
 
+    @Override
     public Optional<IRI> getTarget() {
         return of(target);
     }
 
+    @Override
     public Collection<IRI> getTypes() {
         return data.getGraph(Trellis.PreferAudit)
             .map(graph -> graph.stream(null, type, null).map(Triple::getObject)
@@ -79,6 +88,7 @@ class Notification implements Event {
             .orElse(emptyList());
     }
 
+    @Override
     public Collection<IRI> getTargetTypes() {
         final Set<IRI> graphs = new HashSet<>();
         graphs.add(Trellis.PreferServerManaged);
@@ -89,10 +99,12 @@ class Notification implements Event {
             .filter(term -> term instanceof IRI).map(term -> (IRI) term).distinct().collect(toList());
     }
 
+    @Override
     public Instant getCreated() {
         return created;
     }
 
+    @Override
     public Optional<IRI> getInbox() {
         return data.getGraph(Trellis.PreferUserManaged)
             .flatMap(graph -> graph.stream(null, LDP.inbox, null).map(Triple::getObject)

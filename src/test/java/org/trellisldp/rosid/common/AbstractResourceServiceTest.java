@@ -15,6 +15,7 @@ package org.trellisldp.rosid.common;
 
 import static java.util.Optional.empty;
 import static org.apache.curator.framework.CuratorFrameworkFactory.newClient;
+import static org.apache.kafka.clients.consumer.OffsetResetStrategy.EARLIEST;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -35,6 +36,7 @@ import org.apache.commons.rdf.jena.JenaRDF;
 import org.apache.curator.retry.RetryNTimes;
 import org.apache.curator.test.TestingServer;
 import org.apache.kafka.common.serialization.StringSerializer;
+import org.apache.kafka.clients.consumer.MockConsumer;
 import org.apache.kafka.clients.producer.MockProducer;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -58,6 +60,7 @@ public class AbstractResourceServiceTest {
     public static class MyResourceService extends AbstractResourceService {
         public MyResourceService(final EventService eventService, final String connectString) {
             super(eventService, new MockProducer<>(true, new StringSerializer(), new DatasetSerialization()),
+                    new MockConsumer<>(EARLIEST),
                     newClient(connectString, new RetryNTimes(10, 1000)));
         }
 

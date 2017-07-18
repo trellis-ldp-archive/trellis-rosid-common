@@ -13,13 +13,11 @@
  */
 package org.trellisldp.rosid.common;
 
-import static java.util.Collections.singleton;
-
 import java.util.Properties;
 
 import org.apache.commons.rdf.api.Dataset;
+import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
-import org.apache.kafka.common.TopicPartition;
 import org.trellisldp.spi.EventService;
 
 /**
@@ -29,8 +27,33 @@ class NotificationServiceRunner extends AbstractConsumerRunner {
 
     private final EventService service;
 
-    public NotificationServiceRunner(final TopicPartition topic, final Properties props, final EventService service) {
-        super(singleton(topic), props);
+    /**
+     * A runnable object which connects a Kafka topic to the event service
+     * @param props the Kafka properties
+     * @param service the event service
+     */
+    public NotificationServiceRunner(final Properties props, final EventService service) {
+        super(props);
+        this.service = service;
+    }
+
+    /**
+     * A runnable object which connects a Kafka topic to the event service
+     * @param service the event service
+     */
+    public NotificationServiceRunner(final EventService service) {
+        super();
+        this.service = service;
+    }
+
+    /**
+     * A runnable object which connects a Kafka topic to the event service
+     * @param props the Kafka properties
+     * @param service the event service
+     */
+    public NotificationServiceRunner(final Consumer<String, Dataset> consumer,
+            final EventService service) {
+        super(consumer);
         this.service = service;
     }
 

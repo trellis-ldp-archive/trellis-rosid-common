@@ -19,7 +19,6 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.kafka.clients.consumer.OffsetResetStrategy.EARLIEST;
 import static org.junit.Assert.assertTrue;
 
-import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -40,9 +39,9 @@ public class AbstractConsumerRunnerTest {
 
         private CompletableFuture<ConsumerRecords<String, Dataset>> future;
 
-        public MyConsumerRunner(final Collection<TopicPartition> topics, final Consumer<String, Dataset> consumer,
+        public MyConsumerRunner(final Consumer<String, Dataset> consumer,
                 final CompletableFuture<ConsumerRecords<String, Dataset>> future) {
-            super(topics, consumer);
+            super(consumer);
             this.future = future;
         }
 
@@ -63,7 +62,8 @@ public class AbstractConsumerRunnerTest {
         consumer.updateBeginningOffsets(singletonMap(topic, 0L));
         consumer.schedulePollTask(() -> val.set(true));
 
-        final MyConsumerRunner runner = new MyConsumerRunner(asList(topic), consumer, future);
+        final MyConsumerRunner runner = new MyConsumerRunner(consumer, future);
+        runner.assign(asList(topic));
         new Thread(runner).start();
 
         consumer.addRecord(record);

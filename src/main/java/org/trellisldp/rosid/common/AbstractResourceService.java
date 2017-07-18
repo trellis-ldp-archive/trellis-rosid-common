@@ -14,11 +14,13 @@
 package org.trellisldp.rosid.common;
 
 import static java.time.Instant.now;
+import static java.util.Collections.singleton;
 import static java.util.Optional.of;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.stream.Stream.concat;
 import static java.util.stream.Stream.empty;
 import static org.slf4j.LoggerFactory.getLogger;
+import static org.trellisldp.rosid.common.RosidConstants.TOPIC_INTERNAL_NOTIFICATION;
 import static org.trellisldp.rosid.common.RDFUtils.endedAtQuad;
 import static org.trellisldp.rosid.common.RDFUtils.getParent;
 import static org.trellisldp.vocabulary.AS.Create;
@@ -39,6 +41,7 @@ import org.apache.commons.rdf.api.RDFTerm;
 import org.apache.commons.rdf.api.Triple;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.locks.InterProcessLock;
+import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.producer.Producer;
 import org.slf4j.Logger;
 import org.trellisldp.api.Resource;
@@ -53,7 +56,7 @@ public abstract class AbstractResourceService extends LockableResourceService {
 
     protected final String SKOLEM_BNODE_PREFIX = "trellis:bnode/";
 
-    protected final EventService eventService;
+    private final NotificationServiceRunner notificationService;
 
     /**
      * Create an AbstractResourceService with the given properties
@@ -64,19 +67,24 @@ public abstract class AbstractResourceService extends LockableResourceService {
     public AbstractResourceService(final EventService service, final Properties kafkaProperties,
             final Properties zkProperties) {
         super(kafkaProperties, zkProperties);
-        this.eventService = service;
+        notificationService = new NotificationServiceRunner(kafkaProperties, service);
+        notificationService.subscribe(singleton(TOPIC_INTERNAL_NOTIFICATION));
+        new Thread(notificationService).start();
     }
 
     /**
      * Create an AbstractResourceService with the given producer
      * @param service the event service
      * @param producer the kafka producer
+     * @param consumer the kafka consumer
      * @param curator the zookeeper curator
      */
     public AbstractResourceService(final EventService service, final Producer<String, Dataset> producer,
-            final CuratorFramework curator) {
+            final Consumer<String, Dataset> consumer, final CuratorFramework curator) {
         super(producer, curator);
-        this.eventService = service;
+        notificationService = new NotificationServiceRunner(consumer, service);
+        notificationService.subscribe(singleton(TOPIC_INTERNAL_NOTIFICATION));
+        new Thread(notificationService).start();
     }
 
     /**
@@ -169,6 +177,12 @@ public abstract class AbstractResourceService extends LockableResourceService {
             }
         }
         return term;
+    }
+
+    @Override
+    public void close() {
+        super.close();
+        notificationService.shutdown();
     }
 
     @Override
