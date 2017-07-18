@@ -137,7 +137,7 @@ class EventProducer {
 
             for (final Future<RecordMetadata> result : results) {
                 final RecordMetadata res = result.get();
-                LOGGER.info("Send record to topic: {}, {}", res.topic(), res.timestamp());
+                LOGGER.debug("Send record to topic: {}, {}", res.topic(), res.timestamp());
             }
 
             return true;
