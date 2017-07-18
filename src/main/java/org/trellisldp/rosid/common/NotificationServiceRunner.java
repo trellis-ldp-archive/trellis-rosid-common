@@ -58,8 +58,6 @@ class NotificationServiceRunner extends AbstractConsumerRunner {
 
     @Override
     protected void handleRecords(final ConsumerRecords<String, Dataset> records) {
-        records.iterator().forEachRemaining(record -> {
-            service.emit(new Notification(record.key(), record.value()));
-        });
+        records.iterator().forEachRemaining(record -> service.emit(new Notification(record.key(), record.value())));
     }
 }

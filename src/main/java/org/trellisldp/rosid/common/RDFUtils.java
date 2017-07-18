@@ -14,6 +14,7 @@
 package org.trellisldp.rosid.common;
 
 import static java.util.Optional.of;
+import static org.trellisldp.spi.RDFUtils.getInstance;
 import static org.trellisldp.vocabulary.PROV.endedAtTime;
 import static org.trellisldp.vocabulary.PROV.wasGeneratedBy;
 import static org.trellisldp.vocabulary.Trellis.PreferAudit;
@@ -21,7 +22,6 @@ import static org.trellisldp.vocabulary.XSD.dateTime;
 
 import java.time.Instant;
 import java.util.Optional;
-import java.util.ServiceLoader;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
@@ -36,15 +36,7 @@ import org.apache.commons.rdf.api.RDF;
  */
 public final class RDFUtils {
 
-    private static final RDF rdf = ServiceLoader.load(RDF.class).iterator().next();
-
-    /**
-     * Get a singleton RDF instance
-     * @return the RDF instance
-     */
-    public static RDF getInstance() {
-        return rdf;
-    }
+    private static final RDF rdf = getInstance();
 
     /**
      * Get the PROV.endedAtTime quad, wrapped in a Stream

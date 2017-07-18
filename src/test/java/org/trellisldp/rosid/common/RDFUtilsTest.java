@@ -13,8 +13,34 @@
  */
 package org.trellisldp.rosid.common;
 
-import static org.junit.Assert.assertNotNull;
+import static java.time.Instant.now;
+import static java.util.Optional.empty;
+import static java.util.Optional.of;
+import static java.util.stream.Collectors.toList;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.trellisldp.rosid.common.RDFUtils.endedAtQuad;
+import static org.trellisldp.rosid.common.RDFUtils.getParent;
+import static org.trellisldp.rosid.common.RDFUtils.hasObjectIRI;
+import static org.trellisldp.rosid.common.RDFUtils.hasSubjectIRI;
+import static org.trellisldp.rosid.common.RDFUtils.inDomain;
+import static org.trellisldp.rosid.common.RDFUtils.objectIsSameResource;
+import static org.trellisldp.rosid.common.RDFUtils.subjectIsSameResource;
+import static org.trellisldp.spi.RDFUtils.getInstance;
 
+import java.time.Instant;
+import java.util.List;
+
+import org.apache.commons.rdf.api.Dataset;
+import org.apache.commons.rdf.api.IRI;
+import org.apache.commons.rdf.api.Literal;
+import org.apache.commons.rdf.api.Quad;
+import org.apache.commons.rdf.api.RDF;
+import org.apache.commons.rdf.api.RDFTerm;
+import org.trellisldp.vocabulary.DC;
+import org.trellisldp.vocabulary.PROV;
+import org.trellisldp.vocabulary.Trellis;
+import org.trellisldp.vocabulary.XSD;
 import org.junit.Test;
 
 /**
@@ -22,8 +48,70 @@ import org.junit.Test;
  */
 public class RDFUtilsTest {
 
+    private static final RDF rdf = getInstance();
+
+    private final IRI identifier = rdf.createIRI("trellis:repository/resource");
+    private final IRI agent = rdf.createIRI("http://example.org/agent");
+
     @Test
-    public void testGetInstance() {
-        assertNotNull(RDFUtils.getInstance());
+    public void testFilters() {
+        final Dataset dataset = rdf.createDataset();
+        dataset.add(rdf.createQuad(Trellis.PreferAudit, identifier, PROV.wasGeneratedBy, agent));
+        dataset.add(rdf.createQuad(Trellis.PreferAudit, rdf.createBlankNode(), PROV.endedAtTime,
+                    rdf.createLiteral(now().toString(), XSD.dateTime)));
+        assertEquals(1L, dataset.stream().filter(hasObjectIRI).count());
+        assertEquals(1L, dataset.stream().filter(hasSubjectIRI).count());
+    }
+
+    @Test
+    public void testInDomain() {
+        final Dataset dataset = rdf.createDataset();
+        dataset.add(rdf.createQuad(null, identifier, DC.hasPart,
+                    rdf.createIRI("trellis:repository/other/resource")));
+        dataset.add(rdf.createQuad(null, identifier, DC.hasPart,
+                    rdf.createIRI("trellis:other/some/resource")));
+        dataset.add(rdf.createQuad(null, identifier, DC.hasPart,
+                    rdf.createIRI("http://example.org/resource")));
+        assertEquals(1L, dataset.stream().filter(inDomain("trellis:repository")).count());
+    }
+
+    @Test
+    public void testSubjectResource() {
+        final Dataset dataset = rdf.createDataset();
+        dataset.add(rdf.createQuad(null, identifier, DC.hasPart,
+                    rdf.createIRI("trellis:repository/other/resource")));
+        dataset.add(rdf.createQuad(null, rdf.createIRI("trellis:other/some/resource"), DC.hasPart,
+                    rdf.createIRI("http://example.org/resource")));
+        assertEquals(1L, dataset.stream().filter(subjectIsSameResource(identifier)).count());
+    }
+
+    @Test
+    public void testObjectResource() {
+        final Dataset dataset = rdf.createDataset();
+        dataset.add(rdf.createQuad(null, rdf.createIRI("http://example.org/resource"), DC.hasPart,
+                    rdf.createIRI("trellis:repository/other/resource")));
+        dataset.add(rdf.createQuad(null, rdf.createIRI("trellis:other/some/resource"), DC.hasPart,
+                    identifier));
+        assertEquals(1L, dataset.stream().filter(objectIsSameResource(identifier)).count());
+    }
+
+    @Test
+    public void testGetParent() {
+        assertEquals(of("trellis:repository"), getParent("trellis:repository/resource"));
+        assertEquals(empty(), getParent("trellis:repository"));
+        assertEquals(of("trellis:repository/resource"), getParent("trellis:repository/resource/child"));
+    }
+
+    @Test
+    public void testEndedAtQuad() {
+        final Dataset dataset = rdf.createDataset();
+        final Instant time = now();
+        dataset.add(rdf.createQuad(Trellis.PreferAudit, identifier, PROV.wasGeneratedBy, rdf.createBlankNode()));
+
+        final List<Quad> quads = endedAtQuad(identifier, dataset, time).collect(toList());
+        assertEquals(1L, quads.size());
+        final RDFTerm literal = quads.get(0).getObject();
+        assertTrue(literal instanceof Literal);
+        assertEquals(time.toString(), ((Literal) literal).getLexicalForm());
     }
 }

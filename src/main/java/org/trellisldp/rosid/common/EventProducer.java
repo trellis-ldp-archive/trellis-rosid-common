@@ -16,7 +16,6 @@ package org.trellisldp.rosid.common;
 import static java.util.Optional.of;
 import static java.util.stream.Collectors.groupingBy;
 import static org.slf4j.LoggerFactory.getLogger;
-import static org.trellisldp.rosid.common.RDFUtils.getInstance;
 import static org.trellisldp.rosid.common.RDFUtils.getParent;
 import static org.trellisldp.rosid.common.RDFUtils.inDomain;
 import static org.trellisldp.rosid.common.RDFUtils.objectIsSameResource;
@@ -28,6 +27,7 @@ import static org.trellisldp.rosid.common.RosidConstants.TOPIC_LDP_CONTAINMENT_A
 import static org.trellisldp.rosid.common.RosidConstants.TOPIC_LDP_CONTAINMENT_DELETE;
 import static org.trellisldp.rosid.common.RosidConstants.TOPIC_LDP_MEMBERSHIP_ADD;
 import static org.trellisldp.rosid.common.RosidConstants.TOPIC_LDP_MEMBERSHIP_DELETE;
+import static org.trellisldp.spi.RDFUtils.getInstance;
 import static org.trellisldp.vocabulary.AS.Create;
 import static org.trellisldp.vocabulary.AS.Delete;
 import static org.trellisldp.vocabulary.DC.modified;
