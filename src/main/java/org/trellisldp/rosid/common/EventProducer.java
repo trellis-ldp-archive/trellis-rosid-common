@@ -124,11 +124,12 @@ class EventProducer {
 
             // Update the containment triples of the parent resource if this is a delete or create operation
             getParent(identifier.getIRIString()).ifPresent(container -> {
-                dataset.add(rdf.createQuad(PreferContainment, rdf.createIRI(container), contains, identifier));
                 if (isDelete) {
+                    dataset.add(rdf.createQuad(PreferContainment, rdf.createIRI(container), contains, identifier));
                     results.add(producer.send(new ProducerRecord<>(TOPIC_LDP_CONTAINMENT_DELETE, container, dataset)));
                     results.add(producer.send(new ProducerRecord<>(TOPIC_LDP_MEMBERSHIP_DELETE, container, dataset)));
                 } else if (isCreate) {
+                    dataset.add(rdf.createQuad(PreferContainment, rdf.createIRI(container), contains, identifier));
                     results.add(producer.send(new ProducerRecord<>(TOPIC_LDP_CONTAINMENT_ADD, container, dataset)));
                     results.add(producer.send(new ProducerRecord<>(TOPIC_LDP_MEMBERSHIP_ADD, container, dataset)));
                 }
@@ -160,8 +161,7 @@ class EventProducer {
      */
     public Stream<? extends Quad> getRemoved() {
         return existing.stream().filter(q -> !dataset.contains(q))
-            .filter(q -> q.getGraphName().filter(PreferServerManaged::equals).isPresent() &&
-                    modified.equals(q.getPredicate()));
+            .filter(q -> !q.getGraphName().equals(of(PreferServerManaged)) || !modified.equals(q.getPredicate()));
     }
 
     /**
@@ -169,8 +169,8 @@ class EventProducer {
      * @param quads the quads
      */
     public void into(final Stream<? extends Quad> quads) {
-        quads.filter(q -> q.getGraphName()
-                .filter(g -> PreferUserManaged.equals(g) || PreferServerManaged.equals(g)).isPresent())
+        quads.filter(q -> q.getGraphName().equals(of(PreferUserManaged)) ||
+                q.getGraphName().equals(of(PreferServerManaged)))
             .forEach(existing::add);
     }
 }
