@@ -34,7 +34,7 @@ import org.apache.commons.rdf.api.RDF;
 /**
  * @author acoburn
  */
-public final class RDFUtils {
+final class RDFUtils {
 
     private static final RDF rdf = getInstance();
 
