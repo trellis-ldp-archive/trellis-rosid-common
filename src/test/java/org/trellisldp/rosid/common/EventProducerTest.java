@@ -16,7 +16,16 @@ package org.trellisldp.rosid.common;
 import static java.time.Instant.now;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.trellisldp.rosid.common.RosidConstants.TOPIC_CACHE;
+import static org.trellisldp.rosid.common.RosidConstants.TOPIC_INBOUND_ADD;
+import static org.trellisldp.rosid.common.RosidConstants.TOPIC_INBOUND_DELETE;
+import static org.trellisldp.rosid.common.RosidConstants.TOPIC_LDP_CONTAINMENT_ADD;
+import static org.trellisldp.rosid.common.RosidConstants.TOPIC_LDP_CONTAINMENT_DELETE;
+import static org.trellisldp.rosid.common.RosidConstants.TOPIC_LDP_MEMBERSHIP_ADD;
+import static org.trellisldp.rosid.common.RosidConstants.TOPIC_LDP_MEMBERSHIP_DELETE;
 import static org.trellisldp.vocabulary.RDF.type;
+
+import java.util.List;
 
 import org.apache.commons.rdf.api.BlankNode;
 import org.apache.commons.rdf.api.Dataset;
@@ -25,6 +34,7 @@ import org.apache.commons.rdf.api.Literal;
 import org.apache.commons.rdf.api.RDF;
 import org.apache.commons.rdf.jena.JenaRDF;
 import org.apache.kafka.clients.producer.MockProducer;
+import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.StringSerializer;
 
 import org.junit.Test;
@@ -74,12 +84,18 @@ public class EventProducerTest {
                     rdf.createLiteral("Better title")));
         modified.add(rdf.createQuad(Trellis.PreferServerManaged, identifier, type, LDP.Container));
 
+        producer.clear();
         final EventProducer event = new EventProducer(producer, identifier, modified);
         event.into(existing.stream());
 
         assertTrue(event.emit());
         assertEquals(4L, event.getRemoved().count());
         assertEquals(5L, event.getAdded().count());
+        final List<ProducerRecord<String, Dataset>> records = producer.history();
+        assertEquals(3L, records.size());
+        assertEquals(1L, records.stream().filter(r -> r.topic().equals(TOPIC_INBOUND_DELETE)).count());
+        assertEquals(1L, records.stream().filter(r -> r.topic().equals(TOPIC_INBOUND_ADD)).count());
+        assertEquals(1L, records.stream().filter(r -> r.topic().equals(TOPIC_CACHE)).count());
     }
 
     @Test
@@ -106,13 +122,20 @@ public class EventProducerTest {
         modified.add(rdf.createQuad(Trellis.PreferServerManaged, identifier, type, LDP.Container));
         modified.add(rdf.createQuad(Trellis.PreferAudit, rdf.createBlankNode(), type, AS.Create));
 
+        producer.clear();
         final EventProducer event = new EventProducer(producer, identifier, modified);
         event.into(existing.stream());
 
-        assertTrue(event.emit());
         assertEquals(4L, event.getRemoved().count());
-        // 7 because a containment triple is added for the parent
-        assertEquals(7L, event.getAdded().count());
+        assertEquals(6L, event.getAdded().count());
+        assertTrue(event.emit());
+        final List<ProducerRecord<String, Dataset>> records = producer.history();
+        assertEquals(5L, records.size());
+        assertEquals(1L, records.stream().filter(r -> r.topic().equals(TOPIC_LDP_CONTAINMENT_ADD)).count());
+        assertEquals(1L, records.stream().filter(r -> r.topic().equals(TOPIC_LDP_MEMBERSHIP_ADD)).count());
+        assertEquals(1L, records.stream().filter(r -> r.topic().equals(TOPIC_INBOUND_DELETE)).count());
+        assertEquals(1L, records.stream().filter(r -> r.topic().equals(TOPIC_INBOUND_ADD)).count());
+        assertEquals(1L, records.stream().filter(r -> r.topic().equals(TOPIC_CACHE)).count());
     }
 
     @Test
@@ -140,12 +163,19 @@ public class EventProducerTest {
         modified.add(rdf.createQuad(Trellis.PreferServerManaged, identifier, type, LDP.Container));
         modified.add(rdf.createQuad(Trellis.PreferAudit, bnode, type, AS.Delete));
 
+        producer.clear();
         final EventProducer event = new EventProducer(producer, identifier, modified);
         event.into(existing.stream());
 
-        assertTrue(event.emit());
         assertEquals(4L, event.getRemoved().count());
-        // 7 because a containment triple is added for the parent
-        assertEquals(7L, event.getAdded().count());
+        assertEquals(6L, event.getAdded().count());
+        assertTrue(event.emit());
+        final List<ProducerRecord<String, Dataset>> records = producer.history();
+        assertEquals(5L, records.size());
+        assertEquals(1L, records.stream().filter(r -> r.topic().equals(TOPIC_LDP_CONTAINMENT_DELETE)).count());
+        assertEquals(1L, records.stream().filter(r -> r.topic().equals(TOPIC_LDP_MEMBERSHIP_DELETE)).count());
+        assertEquals(1L, records.stream().filter(r -> r.topic().equals(TOPIC_INBOUND_DELETE)).count());
+        assertEquals(1L, records.stream().filter(r -> r.topic().equals(TOPIC_INBOUND_ADD)).count());
+        assertEquals(1L, records.stream().filter(r -> r.topic().equals(TOPIC_CACHE)).count());
     }
 }
