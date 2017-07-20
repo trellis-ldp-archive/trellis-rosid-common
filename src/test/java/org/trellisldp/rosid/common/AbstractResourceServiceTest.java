@@ -14,6 +14,7 @@
 package org.trellisldp.rosid.common;
 
 import static java.util.Optional.empty;
+import static java.util.Optional.of;
 import static org.apache.curator.framework.CuratorFrameworkFactory.newClient;
 import static org.apache.kafka.clients.consumer.OffsetResetStrategy.EARLIEST;
 import static org.junit.Assert.assertEquals;
@@ -29,6 +30,7 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 import org.apache.commons.rdf.api.BlankNode;
+import org.apache.commons.rdf.api.Dataset;
 import org.apache.commons.rdf.api.IRI;
 import org.apache.commons.rdf.api.Quad;
 import org.apache.commons.rdf.api.RDF;
@@ -90,6 +92,9 @@ public class AbstractResourceServiceTest {
     public void testSkolemization() {
         final BlankNode bnode = rdf.createBlankNode("testing");
         final IRI iri = rdf.createIRI("trellis:bnode/testing");
+        final IRI root = rdf.createIRI("trellis:repository");
+        final IRI resource = rdf.createIRI("trellis:repository/resource");
+        final IRI child = rdf.createIRI("trellis:repository/resource/child");
         final ResourceService svc = new MyResourceService(mockEventService, curator.getConnectString());
 
         assertTrue(svc.skolemize(bnode) instanceof IRI);
@@ -100,5 +105,18 @@ public class AbstractResourceServiceTest {
         assertFalse(svc.unskolemize(rdf.createLiteral("Test")) instanceof BlankNode);
         assertFalse(svc.unskolemize(rdf.createIRI("trellis:repository/resource")) instanceof BlankNode);
         assertFalse(svc.skolemize(rdf.createLiteral("Test2")) instanceof IRI);
+        assertEquals(of(resource), svc.getContainer(child));
+        assertEquals(of(root), svc.getContainer(resource));
+        assertEquals(empty(), svc.getContainer(root));
+    }
+
+    @Test
+    public void testPut() {
+        final IRI resource = rdf.createIRI("trellis:repository/resource");
+        final Dataset dataset = rdf.createDataset();
+
+        try (final MyResourceService svc = new MyResourceService(mockEventService, curator.getConnectString())) {
+            assertTrue(svc.put(resource, dataset));
+        }
     }
 }
