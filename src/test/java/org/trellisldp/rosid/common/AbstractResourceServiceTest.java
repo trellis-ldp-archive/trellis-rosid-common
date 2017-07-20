@@ -20,6 +20,7 @@ import static org.apache.kafka.clients.consumer.OffsetResetStrategy.EARLIEST;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.trellisldp.vocabulary.RDF.type;
 
 import org.trellisldp.api.Resource;
 import org.trellisldp.spi.EventService;
@@ -45,6 +46,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
+import org.trellisldp.vocabulary.AS;
+import org.trellisldp.vocabulary.Trellis;
 
 /**
  * @author acoburn
@@ -53,13 +56,20 @@ import org.mockito.runners.MockitoJUnitRunner;
 public class AbstractResourceServiceTest {
 
     private static final RDF rdf = new JenaRDF();
+    private static final IRI existing = rdf.createIRI("trellis:repository/existing");
+    private static final IRI unwritable = rdf.createIRI("trellis:repository/unwritable");
+    private static final IRI resource = rdf.createIRI("trellis:repository/resource");
 
     private static TestingServer curator;
 
     @Mock
     private EventService mockEventService, mockEventService2;
 
+    @Mock
+    private static Resource mockResource;
+
     public static class MyResourceService extends AbstractResourceService {
+
         public MyResourceService(final EventService eventService, final String connectString) {
             super(eventService, new MockProducer<>(true, new StringSerializer(), new DatasetSerialization()),
                     new MockConsumer<>(EARLIEST),
@@ -68,18 +78,24 @@ public class AbstractResourceServiceTest {
 
         @Override
         public Optional<Resource> get(final IRI identifier) {
+            if (identifier.equals(existing)) {
+                return of(mockResource);
+            }
             return empty();
         }
 
         @Override
         public Optional<Resource> get(final IRI identifier, final Instant time) {
+            if (identifier.equals(existing)) {
+                return of(mockResource);
+            }
             return empty();
         }
 
         @Override
         public Boolean write(final IRI identifier, final Stream<? extends Quad> delete,
                 final Stream<? extends Quad> add, final Instant time) {
-            return true;
+            return !identifier.equals(unwritable);
         }
     }
 
@@ -93,7 +109,6 @@ public class AbstractResourceServiceTest {
         final BlankNode bnode = rdf.createBlankNode("testing");
         final IRI iri = rdf.createIRI("trellis:bnode/testing");
         final IRI root = rdf.createIRI("trellis:repository");
-        final IRI resource = rdf.createIRI("trellis:repository/resource");
         final IRI child = rdf.createIRI("trellis:repository/resource/child");
         final ResourceService svc = new MyResourceService(mockEventService, curator.getConnectString());
 
@@ -103,7 +118,7 @@ public class AbstractResourceServiceTest {
         assertEquals(svc.unskolemize(iri), svc.unskolemize(iri));
 
         assertFalse(svc.unskolemize(rdf.createLiteral("Test")) instanceof BlankNode);
-        assertFalse(svc.unskolemize(rdf.createIRI("trellis:repository/resource")) instanceof BlankNode);
+        assertFalse(svc.unskolemize(resource) instanceof BlankNode);
         assertFalse(svc.skolemize(rdf.createLiteral("Test2")) instanceof IRI);
         assertEquals(of(resource), svc.getContainer(child));
         assertEquals(of(root), svc.getContainer(resource));
@@ -111,12 +126,26 @@ public class AbstractResourceServiceTest {
     }
 
     @Test
-    public void testPut() {
-        final IRI resource = rdf.createIRI("trellis:repository/resource");
+    public void testPutCreate() {
         final Dataset dataset = rdf.createDataset();
+        dataset.add(rdf.createQuad(Trellis.PreferAudit, rdf.createBlankNode(), type, AS.Create));
 
         try (final MyResourceService svc = new MyResourceService(mockEventService, curator.getConnectString())) {
             assertTrue(svc.put(resource, dataset));
+            assertFalse(svc.put(existing, dataset));
+            assertFalse(svc.put(unwritable, dataset));
+        }
+    }
+
+    @Test
+    public void testPutDelete() {
+        final Dataset dataset = rdf.createDataset();
+        dataset.add(rdf.createQuad(Trellis.PreferAudit, rdf.createBlankNode(), type, AS.Delete));
+
+        try (final MyResourceService svc = new MyResourceService(mockEventService, curator.getConnectString())) {
+            assertFalse(svc.put(resource, dataset));
+            assertTrue(svc.put(existing, dataset));
+            assertFalse(svc.put(unwritable, dataset));
         }
     }
 }
