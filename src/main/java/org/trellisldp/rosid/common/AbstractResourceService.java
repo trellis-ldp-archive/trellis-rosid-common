@@ -28,7 +28,6 @@ import static org.trellisldp.vocabulary.Trellis.PreferAudit;
 
 import java.time.Instant;
 import java.util.Optional;
-import java.util.Properties;
 import java.util.stream.Stream;
 
 import org.apache.commons.rdf.api.BlankNode;
@@ -53,17 +52,6 @@ public abstract class AbstractResourceService extends LockableResourceService {
     private static final Logger LOGGER = getLogger(AbstractResourceService.class);
 
     protected final String SKOLEM_BNODE_PREFIX = "trellis:bnode/";
-
-    /**
-     * Create an AbstractResourceService with the given properties
-     * @param service the event service
-     * @param kafkaProperties the kafka properties
-     * @param zkProperties the zookeeper properties
-     */
-    public AbstractResourceService(final EventService service, final Properties kafkaProperties,
-            final Properties zkProperties) {
-        super(kafkaProperties, zkProperties, service);
-    }
 
     /**
      * Create an AbstractResourceService with the given producer

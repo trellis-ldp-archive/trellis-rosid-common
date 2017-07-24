@@ -36,6 +36,7 @@ import org.apache.commons.rdf.api.IRI;
 import org.apache.commons.rdf.api.Quad;
 import org.apache.commons.rdf.api.RDF;
 import org.apache.commons.rdf.jena.JenaRDF;
+import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.retry.RetryNTimes;
 import org.apache.curator.test.TestingServer;
 import org.apache.kafka.common.serialization.StringSerializer;
@@ -73,7 +74,13 @@ public class AbstractResourceServiceTest {
         public MyResourceService(final EventService eventService, final String connectString) {
             super(eventService, new MockProducer<>(true, new StringSerializer(), new DatasetSerialization()),
                     new MockConsumer<>(EARLIEST),
-                    newClient(connectString, new RetryNTimes(10, 1000)));
+                    getZkClient(connectString));
+        }
+
+        private static CuratorFramework getZkClient(final String connectString) {
+            final CuratorFramework zk = newClient(connectString, new RetryNTimes(10, 1000));
+            zk.start();
+            return zk;
         }
 
         @Override
