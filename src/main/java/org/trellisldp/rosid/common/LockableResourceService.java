@@ -13,10 +13,8 @@
  */
 package org.trellisldp.rosid.common;
 
-import static java.util.Collections.singleton;
 import static org.apache.commons.codec.digest.DigestUtils.md5Hex;
 import static org.slf4j.LoggerFactory.getLogger;
-import static org.trellisldp.rosid.common.RosidConstants.TOPIC_INTERNAL_NOTIFICATION;
 import static org.trellisldp.rosid.common.RosidConstants.ZNODE_COORDINATION;
 import static org.trellisldp.spi.RDFUtils.getInstance;
 
@@ -26,51 +24,37 @@ import org.apache.commons.rdf.api.RDF;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.locks.InterProcessLock;
 import org.apache.curator.framework.recipes.locks.InterProcessSemaphoreMutex;
-import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.producer.Producer;
 import org.slf4j.Logger;
-import org.trellisldp.spi.EventService;
 import org.trellisldp.spi.ResourceService;
 import org.trellisldp.spi.RuntimeRepositoryException;
 
 /**
  * @author acoburn
  */
-abstract class LockableResourceService implements ResourceService, AutoCloseable {
+abstract class LockableResourceService implements ResourceService {
 
     private static final Logger LOGGER = getLogger(LockableResourceService.class);
 
     protected final Producer<String, Dataset> producer;
 
-    protected final NotificationServiceRunner notificationService;
-
     protected final CuratorFramework curator;
 
     protected final RDF rdf = getInstance();
 
-    protected LockableResourceService(final Producer<String, Dataset> producer,
-            final Consumer<String, Dataset> consumer, final CuratorFramework curator, final EventService eventService) {
+    protected LockableResourceService(final Producer<String, Dataset> producer, final CuratorFramework curator) {
         this.producer = producer;
         this.curator = curator;
-        this.notificationService = new NotificationServiceRunner(consumer, eventService);
         try {
             this.curator.createContainers(ZNODE_COORDINATION);
         } catch (final Exception ex) {
             LOGGER.error("Could not create zk session node: {}", ex.getMessage());
             throw new RuntimeRepositoryException(ex);
         }
-        this.notificationService.subscribe(singleton(TOPIC_INTERNAL_NOTIFICATION));
-        new Thread(notificationService).start();
     }
 
     protected InterProcessLock getLock(final IRI identifier) {
         final String path = ZNODE_COORDINATION + "/" + md5Hex(identifier.getIRIString());
         return new InterProcessSemaphoreMutex(curator, path);
     }
-
-    @Override
-    public void close() {
-        notificationService.shutdown();
-    }
-
 }

@@ -38,11 +38,9 @@ import org.apache.commons.rdf.api.RDFTerm;
 import org.apache.commons.rdf.api.Triple;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.locks.InterProcessLock;
-import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.producer.Producer;
 import org.slf4j.Logger;
 import org.trellisldp.api.Resource;
-import org.trellisldp.spi.EventService;
 
 /**
  * @author acoburn
@@ -55,14 +53,11 @@ public abstract class AbstractResourceService extends LockableResourceService {
 
     /**
      * Create an AbstractResourceService with the given producer
-     * @param service the event service
      * @param producer the kafka producer
-     * @param consumer the kafka consumer
      * @param curator the zookeeper curator
      */
-    public AbstractResourceService(final EventService service, final Producer<String, Dataset> producer,
-            final Consumer<String, Dataset> consumer, final CuratorFramework curator) {
-        super(producer, consumer, curator, service);
+    public AbstractResourceService(final Producer<String, Dataset> producer, final CuratorFramework curator) {
+        super(producer, curator);
     }
 
     /**

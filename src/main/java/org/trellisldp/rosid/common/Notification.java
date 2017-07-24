@@ -41,7 +41,7 @@ import org.trellisldp.vocabulary.Trellis;
 /**
  * @author acoburn
  */
-class Notification implements Event {
+public class Notification implements Event {
 
     private static final RDF rdf = getInstance();
 
