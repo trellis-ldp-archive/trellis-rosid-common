@@ -71,6 +71,23 @@ class EventProducer {
 
     private final Dataset dataset;
 
+    private final Boolean async;
+
+    /**
+     * Create a new event producer
+     * @param producer the kafka producer
+     * @param identifier the identifier
+     * @param dataset the dataset
+     * @param async whether the cache is generated asynchronously
+     */
+    public EventProducer(final Producer<String, Dataset> producer, final IRI identifier, final Dataset dataset,
+            final Boolean async) {
+        this.producer = producer;
+        this.identifier = identifier;
+        this.dataset = dataset;
+        this.async = async;
+    }
+
     /**
      * Create a new event producer
      * @param producer the kafka producer
@@ -78,9 +95,7 @@ class EventProducer {
      * @param dataset the dataset
      */
     public EventProducer(final Producer<String, Dataset> producer, final IRI identifier, final Dataset dataset) {
-        this.producer = producer;
-        this.identifier = identifier;
-        this.dataset = dataset;
+        this(producer, identifier, dataset, false);
     }
 
     /**
@@ -94,7 +109,9 @@ class EventProducer {
         try {
             final List<Future<RecordMetadata>> results = new ArrayList<>();
 
-            results.add(producer.send(new ProducerRecord<>(TOPIC_CACHE, identifier.getIRIString(), dataset)));
+            if (async) {
+                results.add(producer.send(new ProducerRecord<>(TOPIC_CACHE, identifier.getIRIString(), dataset)));
+            }
 
             // Handle the addition of any in-domain outbound triples
             getAdded()

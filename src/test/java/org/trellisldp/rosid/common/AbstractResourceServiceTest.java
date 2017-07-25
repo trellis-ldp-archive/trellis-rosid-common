@@ -24,7 +24,9 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verify;
 import static org.trellisldp.rosid.common.RosidConstants.ZNODE_COORDINATION;
 import static org.trellisldp.vocabulary.RDF.type;
 
@@ -173,6 +175,7 @@ public class AbstractResourceServiceTest {
         assertTrue(svc.put(resource, dataset));
         assertFalse(svc.put(existing, dataset));
         assertFalse(svc.put(unwritable, dataset));
+        verify(mockEventService, times(0)).emit(any(Notification.class));
     }
 
     @Test
@@ -184,6 +187,7 @@ public class AbstractResourceServiceTest {
         assertFalse(svc.put(resource, dataset));
         assertTrue(svc.put(existing, dataset));
         assertFalse(svc.put(unwritable, dataset));
+        verify(mockEventService, times(1)).emit(any(Notification.class));
     }
 
     @Test
@@ -196,6 +200,7 @@ public class AbstractResourceServiceTest {
         assertTrue(svc.put(resource, dataset));
         assertTrue(svc.put(existing, dataset));
         assertFalse(svc.put(unwritable, dataset));
+        verify(mockEventService, times(2)).emit(any(Notification.class));
     }
 
     @Test
@@ -211,6 +216,7 @@ public class AbstractResourceServiceTest {
         assertFalse(svc.put(locked, dataset));
         assertTrue(svc.put(resource, dataset));
         assertTrue(svc.put(existing, dataset));
+        verify(mockEventService, times(2)).emit(any(Notification.class));
     }
 
     @Test(expected = RuntimeRepositoryException.class)
@@ -229,6 +235,7 @@ public class AbstractResourceServiceTest {
         final ResourceService svc = new MyResourceService(curator.getConnectString(), mockEventService, mockLock);
         assertFalse(svc.put(resource, dataset));
         assertFalse(svc.put(existing, dataset));
+        verify(mockEventService, times(0)).emit(any(Notification.class));
     }
 
     @Test
@@ -242,5 +249,6 @@ public class AbstractResourceServiceTest {
         final ResourceService svc = new MyResourceService(curator.getConnectString(), mockEventService, mockLock);
         assertTrue(svc.put(resource, dataset));
         assertTrue(svc.put(existing, dataset));
+        verify(mockEventService, times(2)).emit(any(Notification.class));
     }
 }
