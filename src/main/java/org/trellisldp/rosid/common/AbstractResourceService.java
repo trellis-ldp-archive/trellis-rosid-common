@@ -14,6 +14,7 @@
 package org.trellisldp.rosid.common;
 
 import static java.time.Instant.now;
+import static java.util.Objects.nonNull;
 import static java.util.Optional.of;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.stream.Stream.concat;
@@ -41,6 +42,7 @@ import org.apache.curator.framework.recipes.locks.InterProcessLock;
 import org.apache.kafka.clients.producer.Producer;
 import org.slf4j.Logger;
 import org.trellisldp.api.Resource;
+import org.trellisldp.spi.EventService;
 
 /**
  * @author acoburn
@@ -51,13 +53,18 @@ public abstract class AbstractResourceService extends LockableResourceService {
 
     protected final String SKOLEM_BNODE_PREFIX = "trellis:bnode/";
 
+    private final EventService notifications;
+
     /**
      * Create an AbstractResourceService with the given producer
      * @param producer the kafka producer
      * @param curator the zookeeper curator
+     * @param notifications the event service
      */
-    public AbstractResourceService(final Producer<String, Dataset> producer, final CuratorFramework curator) {
+    public AbstractResourceService(final Producer<String, Dataset> producer, final CuratorFramework curator,
+            final EventService notifications) {
         super(producer, curator);
+        this.notifications = notifications;
     }
 
     /**
@@ -90,6 +97,10 @@ public abstract class AbstractResourceService extends LockableResourceService {
             lock.release();
         } catch (final Exception ex) {
             LOGGER.error("Error releasing resource lock: {}", ex.getMessage());
+        }
+
+        if (status && nonNull(notifications)) {
+            notifications.emit(new Notification(identifier.getIRIString(), dataset));
         }
 
         return status;

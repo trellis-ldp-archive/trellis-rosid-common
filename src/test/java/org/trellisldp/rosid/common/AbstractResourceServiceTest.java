@@ -13,12 +13,19 @@
  */
 package org.trellisldp.rosid.common;
 
+import static java.util.Objects.nonNull;
 import static java.util.Optional.empty;
 import static java.util.Optional.of;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.apache.commons.codec.digest.DigestUtils.md5Hex;
 import static org.apache.curator.framework.CuratorFrameworkFactory.newClient;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.when;
+import static org.trellisldp.rosid.common.RosidConstants.ZNODE_COORDINATION;
 import static org.trellisldp.vocabulary.RDF.type;
 
 import org.trellisldp.api.Resource;
@@ -26,6 +33,7 @@ import org.trellisldp.spi.ResourceService;
 
 import java.time.Instant;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 import org.apache.commons.rdf.api.BlankNode;
@@ -35,6 +43,8 @@ import org.apache.commons.rdf.api.Quad;
 import org.apache.commons.rdf.api.RDF;
 import org.apache.commons.rdf.jena.JenaRDF;
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.recipes.locks.InterProcessLock;
+import org.apache.curator.framework.recipes.locks.InterProcessSemaphoreMutex;
 import org.apache.curator.retry.RetryNTimes;
 import org.apache.curator.test.TestingServer;
 import org.apache.kafka.common.serialization.StringSerializer;
@@ -44,7 +54,10 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
+import org.trellisldp.spi.RuntimeRepositoryException;
+import org.trellisldp.spi.EventService;
 import org.trellisldp.vocabulary.AS;
+import org.trellisldp.vocabulary.DC;
 import org.trellisldp.vocabulary.Trellis;
 
 /**
@@ -57,23 +70,35 @@ public class AbstractResourceServiceTest {
     private static final IRI existing = rdf.createIRI("trellis:repository/existing");
     private static final IRI unwritable = rdf.createIRI("trellis:repository/unwritable");
     private static final IRI resource = rdf.createIRI("trellis:repository/resource");
+    private static final IRI locked = rdf.createIRI("trellis:repository/locked");
 
     private static TestingServer curator;
 
     @Mock
     private static Resource mockResource;
 
+    @Mock
+    private static CuratorFramework mockCurator;
+
+    @Mock
+    private EventService mockEventService;
+
+    @Mock
+    private InterProcessLock mockLock;
+
     public static class MyResourceService extends AbstractResourceService {
 
-        public MyResourceService(final String connectString) {
-            super(new MockProducer<>(true, new StringSerializer(), new DatasetSerialization()),
-                    getZkClient(connectString));
+        private InterProcessLock lock;
+
+        public MyResourceService(final String connectString, final EventService eventService,
+                final InterProcessLock lock) {
+            this(getZkClient(connectString), eventService, lock);
         }
 
-        private static CuratorFramework getZkClient(final String connectString) {
-            final CuratorFramework zk = newClient(connectString, new RetryNTimes(10, 1000));
-            zk.start();
-            return zk;
+        public MyResourceService(final CuratorFramework curator, final EventService eventService,
+                final InterProcessLock lock) {
+            super(new MockProducer<>(true, new StringSerializer(), new DatasetSerialization()), curator, eventService);
+            this.lock = lock;
         }
 
         @Override
@@ -97,6 +122,20 @@ public class AbstractResourceServiceTest {
                 final Stream<? extends Quad> add, final Instant time) {
             return !identifier.equals(unwritable);
         }
+
+        @Override
+        protected InterProcessLock getLock(final IRI identifier) {
+            if (nonNull(lock)) {
+                return lock;
+            }
+            return super.getLock(identifier);
+        }
+    }
+
+    private static CuratorFramework getZkClient(final String connectString) {
+        final CuratorFramework zk = newClient(connectString, new RetryNTimes(10, 1000));
+        zk.start();
+        return zk;
     }
 
     @BeforeClass
@@ -110,7 +149,7 @@ public class AbstractResourceServiceTest {
         final IRI iri = rdf.createIRI("trellis:bnode/testing");
         final IRI root = rdf.createIRI("trellis:repository");
         final IRI child = rdf.createIRI("trellis:repository/resource/child");
-        final ResourceService svc = new MyResourceService(curator.getConnectString());
+        final ResourceService svc = new MyResourceService(curator.getConnectString(), mockEventService, null);
 
         assertTrue(svc.skolemize(bnode) instanceof IRI);
         assertTrue(((IRI) svc.skolemize(bnode)).getIRIString().startsWith("trellis:bnode/"));
@@ -130,7 +169,7 @@ public class AbstractResourceServiceTest {
         final Dataset dataset = rdf.createDataset();
         dataset.add(rdf.createQuad(Trellis.PreferAudit, rdf.createBlankNode(), type, AS.Create));
 
-        final ResourceService svc = new MyResourceService(curator.getConnectString());
+        final ResourceService svc = new MyResourceService(curator.getConnectString(), null, null);
         assertTrue(svc.put(resource, dataset));
         assertFalse(svc.put(existing, dataset));
         assertFalse(svc.put(unwritable, dataset));
@@ -141,9 +180,67 @@ public class AbstractResourceServiceTest {
         final Dataset dataset = rdf.createDataset();
         dataset.add(rdf.createQuad(Trellis.PreferAudit, rdf.createBlankNode(), type, AS.Delete));
 
-        final ResourceService svc = new MyResourceService(curator.getConnectString());
+        final ResourceService svc = new MyResourceService(curator.getConnectString(), mockEventService, null);
         assertFalse(svc.put(resource, dataset));
         assertTrue(svc.put(existing, dataset));
         assertFalse(svc.put(unwritable, dataset));
+    }
+
+    @Test
+    public void testPutUpdate() {
+        final Dataset dataset = rdf.createDataset();
+        dataset.add(rdf.createQuad(Trellis.PreferAudit, rdf.createBlankNode(), type, AS.Update));
+        dataset.add(rdf.createQuad(Trellis.PreferUserManaged, resource, DC.title, rdf.createLiteral("a title")));
+
+        final ResourceService svc = new MyResourceService(curator.getConnectString(), mockEventService, null);
+        assertTrue(svc.put(resource, dataset));
+        assertTrue(svc.put(existing, dataset));
+        assertFalse(svc.put(unwritable, dataset));
+    }
+
+    @Test
+    public void testLockedResource() throws Exception {
+        final String path = ZNODE_COORDINATION + "/" + md5Hex(locked.getIRIString());
+        final InterProcessLock lock = new InterProcessSemaphoreMutex(getZkClient(curator.getConnectString()), path);
+        assertTrue(lock.acquire(100L, MILLISECONDS));
+
+        final Dataset dataset = rdf.createDataset();
+        dataset.add(rdf.createQuad(Trellis.PreferUserManaged, locked, DC.title, rdf.createLiteral("A title")));
+
+        final ResourceService svc = new MyResourceService(curator.getConnectString(), mockEventService, null);
+        assertFalse(svc.put(locked, dataset));
+        assertTrue(svc.put(resource, dataset));
+        assertTrue(svc.put(existing, dataset));
+    }
+
+    @Test(expected = RuntimeRepositoryException.class)
+    public void testFailedLock1() throws Exception {
+        doThrow(new Exception("Error")).when(mockCurator).createContainers(ZNODE_COORDINATION);
+        new MyResourceService(mockCurator, mockEventService, null);
+    }
+
+    @Test
+    public void testFailedLock2() throws Exception {
+        doThrow(new Exception("Error")).when(mockLock).acquire(any(Long.class), any(TimeUnit.class));
+
+        final Dataset dataset = rdf.createDataset();
+        dataset.add(rdf.createQuad(Trellis.PreferUserManaged, locked, DC.title, rdf.createLiteral("A title")));
+
+        final ResourceService svc = new MyResourceService(curator.getConnectString(), mockEventService, mockLock);
+        assertFalse(svc.put(resource, dataset));
+        assertFalse(svc.put(existing, dataset));
+    }
+
+    @Test
+    public void testFailedLock3() throws Exception {
+        doThrow(new Exception("Error")).when(mockLock).release();
+        when(mockLock.acquire(any(Long.class), any(TimeUnit.class))).thenReturn(true);
+
+        final Dataset dataset = rdf.createDataset();
+        dataset.add(rdf.createQuad(Trellis.PreferUserManaged, locked, DC.title, rdf.createLiteral("A title")));
+
+        final ResourceService svc = new MyResourceService(curator.getConnectString(), mockEventService, mockLock);
+        assertTrue(svc.put(resource, dataset));
+        assertTrue(svc.put(existing, dataset));
     }
 }
