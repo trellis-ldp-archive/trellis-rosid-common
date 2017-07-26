@@ -13,14 +13,20 @@
  */
 package org.trellisldp.rosid.common;
 
+import static java.util.Objects.nonNull;
 import static java.util.Optional.of;
-import static org.trellisldp.spi.RDFUtils.getInstance;
+import static org.apache.jena.riot.Lang.NQUADS;
+import static org.apache.jena.riot.RDFDataMgr.read;
+import static org.apache.jena.riot.RDFDataMgr.write;
+import static org.apache.jena.sparql.core.DatasetGraphFactory.create;
 import static org.trellisldp.vocabulary.PROV.endedAtTime;
 import static org.trellisldp.vocabulary.PROV.wasGeneratedBy;
 import static org.trellisldp.vocabulary.Trellis.PreferAudit;
 import static org.trellisldp.vocabulary.XSD.dateTime;
 
 import java.time.Instant;
+import java.io.StringReader;
+import java.io.StringWriter;
 import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
@@ -30,13 +36,15 @@ import org.apache.commons.rdf.api.Dataset;
 import org.apache.commons.rdf.api.IRI;
 import org.apache.commons.rdf.api.Quad;
 import org.apache.commons.rdf.api.RDF;
+import org.apache.commons.rdf.jena.JenaRDF;
+import org.apache.jena.sparql.core.DatasetGraph;
 
 /**
  * @author acoburn
  */
 final class RDFUtils {
 
-    private static final RDF rdf = getInstance();
+    private static final JenaRDF rdf = new JenaRDF();
 
     /**
      * Get the PROV.endedAtTime quad, wrapped in a Stream
@@ -49,8 +57,8 @@ final class RDFUtils {
         return dataset.stream(of(PreferAudit), identifier, wasGeneratedBy, null)
             .map(Quad::getObject).filter(term -> term instanceof BlankNodeOrIRI)
             .map(term -> (BlankNodeOrIRI) term)
-            .map(term -> rdf.createQuad(PreferAudit, term, endedAtTime,
-                    rdf.createLiteral(time.toString(), dateTime))).limit(1);
+            .map(term -> ((RDF)rdf).createQuad(PreferAudit, term, endedAtTime,
+                    ((RDF)rdf).createLiteral(time.toString(), dateTime))).limit(1);
     }
 
     /**
@@ -100,6 +108,25 @@ final class RDFUtils {
      */
     public static Optional<String> getParent(final String identifier) {
         return of(identifier.lastIndexOf('/')).filter(idx -> idx > 0).map(idx -> identifier.substring(0, idx));
+    }
+
+    public static String serialize(final Dataset dataset) {
+        if (nonNull(dataset)) {
+            final DatasetGraph datasetGraph = create();
+            final StringWriter str = new StringWriter();
+            dataset.stream().map(quad -> rdf.asJenaQuad(quad)).forEach(datasetGraph::add);
+            write(str, datasetGraph, NQUADS);
+            return str.toString();
+        }
+        return "";
+    }
+
+    public static Dataset deserialize(final String data) {
+        final DatasetGraph dataset = create();
+        if (nonNull(data)) {
+            read(dataset, new StringReader(data), null, NQUADS);
+        }
+        return rdf.asDataset(dataset);
     }
 
     private RDFUtils() {

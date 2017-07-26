@@ -20,6 +20,7 @@ import static org.trellisldp.rosid.common.RDFUtils.getParent;
 import static org.trellisldp.rosid.common.RDFUtils.inDomain;
 import static org.trellisldp.rosid.common.RDFUtils.objectIsSameResource;
 import static org.trellisldp.rosid.common.RDFUtils.subjectIsSameResource;
+import static org.trellisldp.rosid.common.RDFUtils.serialize;
 import static org.trellisldp.rosid.common.RosidConstants.TOPIC_CACHE;
 import static org.trellisldp.rosid.common.RosidConstants.TOPIC_INBOUND_ADD;
 import static org.trellisldp.rosid.common.RosidConstants.TOPIC_INBOUND_DELETE;
@@ -65,7 +66,7 @@ class EventProducer {
 
     private final Dataset existing = rdf.createDataset();
 
-    private final Producer<String, Dataset> producer;
+    private final Producer<String, String> producer;
 
     private final IRI identifier;
 
@@ -80,7 +81,7 @@ class EventProducer {
      * @param dataset the dataset
      * @param async whether the cache is generated asynchronously
      */
-    public EventProducer(final Producer<String, Dataset> producer, final IRI identifier, final Dataset dataset,
+    public EventProducer(final Producer<String, String> producer, final IRI identifier, final Dataset dataset,
             final Boolean async) {
         this.producer = producer;
         this.identifier = identifier;
@@ -94,7 +95,7 @@ class EventProducer {
      * @param identifier the identifier
      * @param dataset the dataset
      */
-    public EventProducer(final Producer<String, Dataset> producer, final IRI identifier, final Dataset dataset) {
+    public EventProducer(final Producer<String, String> producer, final IRI identifier, final Dataset dataset) {
         this(producer, identifier, dataset, false);
     }
 
@@ -109,8 +110,9 @@ class EventProducer {
         try {
             final List<Future<RecordMetadata>> results = new ArrayList<>();
 
+            final String serialized = serialize(dataset);
             if (async) {
-                results.add(producer.send(new ProducerRecord<>(TOPIC_CACHE, identifier.getIRIString(), dataset)));
+                results.add(producer.send(new ProducerRecord<>(TOPIC_CACHE, identifier.getIRIString(), serialized)));
             }
 
             // Handle the addition of any in-domain outbound triples
@@ -123,7 +125,7 @@ class EventProducer {
                 .entrySet().forEach(e -> {
                     final Dataset data = rdf.createDataset();
                     e.getValue().forEach(data::add);
-                    results.add(producer.send(new ProducerRecord<>(TOPIC_INBOUND_ADD, e.getKey(), data)));
+                    results.add(producer.send(new ProducerRecord<>(TOPIC_INBOUND_ADD, e.getKey(), serialize(data))));
                 });
 
             // Handle the removal of any in-domain outbound triples
@@ -136,19 +138,21 @@ class EventProducer {
                 .entrySet().forEach(e -> {
                     final Dataset data = rdf.createDataset();
                     e.getValue().forEach(data::add);
-                    results.add(producer.send(new ProducerRecord<>(TOPIC_INBOUND_DELETE, e.getKey(), data)));
+                    results.add(producer.send(new ProducerRecord<>(TOPIC_INBOUND_DELETE, e.getKey(), serialize(data))));
                 });
 
             // Update the containment triples of the parent resource if this is a delete or create operation
             getParent(identifier.getIRIString()).ifPresent(container -> {
                 if (isDelete) {
                     dataset.add(rdf.createQuad(PreferContainment, rdf.createIRI(container), contains, identifier));
-                    results.add(producer.send(new ProducerRecord<>(TOPIC_LDP_CONTAINMENT_DELETE, container, dataset)));
-                    results.add(producer.send(new ProducerRecord<>(TOPIC_LDP_MEMBERSHIP_DELETE, container, dataset)));
+                    results.add(producer.send(
+                                new ProducerRecord<>(TOPIC_LDP_CONTAINMENT_DELETE, container, serialized)));
+                    results.add(producer.send(
+                                new ProducerRecord<>(TOPIC_LDP_MEMBERSHIP_DELETE, container, serialized)));
                 } else if (isCreate) {
                     dataset.add(rdf.createQuad(PreferContainment, rdf.createIRI(container), contains, identifier));
-                    results.add(producer.send(new ProducerRecord<>(TOPIC_LDP_CONTAINMENT_ADD, container, dataset)));
-                    results.add(producer.send(new ProducerRecord<>(TOPIC_LDP_MEMBERSHIP_ADD, container, dataset)));
+                    results.add(producer.send(new ProducerRecord<>(TOPIC_LDP_CONTAINMENT_ADD, container, serialized)));
+                    results.add(producer.send(new ProducerRecord<>(TOPIC_LDP_MEMBERSHIP_ADD, container, serialized)));
                 }
             });
 

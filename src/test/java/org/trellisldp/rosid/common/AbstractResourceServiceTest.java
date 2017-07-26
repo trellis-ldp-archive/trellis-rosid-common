@@ -99,7 +99,7 @@ public class AbstractResourceServiceTest {
 
         public MyResourceService(final CuratorFramework curator, final EventService eventService,
                 final InterProcessLock lock) {
-            super(new MockProducer<>(true, new StringSerializer(), new DatasetSerialization()), curator, eventService);
+            super(new MockProducer<>(true, new StringSerializer(), new StringSerializer()), curator, eventService);
             this.lock = lock;
         }
 

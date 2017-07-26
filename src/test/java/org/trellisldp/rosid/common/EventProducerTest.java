@@ -69,11 +69,11 @@ public class EventProducerTest {
     private final IRI inbox = rdf.createIRI("http://example.org/inbox");
     private final IRI subject = rdf.createIRI("http://example.org/subject");
 
-    private final MockProducer<String, Dataset> producer = new MockProducer<>(true,
-            new StringSerializer(), new DatasetSerialization());
+    private final MockProducer<String, String> producer = new MockProducer<>(true,
+            new StringSerializer(), new StringSerializer());
 
     @Mock
-    private Producer<String, Dataset> mockProducer;
+    private Producer<String, String> mockProducer;
 
     @Mock
     private Future<RecordMetadata> mockFuture;
@@ -108,7 +108,7 @@ public class EventProducerTest {
         assertTrue(event.emit());
         assertEquals(4L, event.getRemoved().count());
         assertEquals(5L, event.getAdded().count());
-        final List<ProducerRecord<String, Dataset>> records = producer.history();
+        final List<ProducerRecord<String, String>> records = producer.history();
         assertEquals(2L, records.size());
         assertEquals(1L, records.stream().filter(r -> r.topic().equals(TOPIC_INBOUND_DELETE)).count());
         assertEquals(1L, records.stream().filter(r -> r.topic().equals(TOPIC_INBOUND_ADD)).count());
@@ -145,7 +145,7 @@ public class EventProducerTest {
         assertEquals(4L, event.getRemoved().count());
         assertEquals(6L, event.getAdded().count());
         assertTrue(event.emit());
-        final List<ProducerRecord<String, Dataset>> records = producer.history();
+        final List<ProducerRecord<String, String>> records = producer.history();
         assertEquals(4L, records.size());
         assertEquals(1L, records.stream().filter(r -> r.topic().equals(TOPIC_LDP_CONTAINMENT_ADD)).count());
         assertEquals(1L, records.stream().filter(r -> r.topic().equals(TOPIC_LDP_MEMBERSHIP_ADD)).count());
@@ -185,7 +185,7 @@ public class EventProducerTest {
         assertEquals(4L, event.getRemoved().count());
         assertEquals(6L, event.getAdded().count());
         assertTrue(event.emit());
-        final List<ProducerRecord<String, Dataset>> records = producer.history();
+        final List<ProducerRecord<String, String>> records = producer.history();
         assertEquals(5L, records.size());
         assertEquals(1L, records.stream().filter(r -> r.topic().equals(TOPIC_LDP_CONTAINMENT_DELETE)).count());
         assertEquals(1L, records.stream().filter(r -> r.topic().equals(TOPIC_LDP_MEMBERSHIP_DELETE)).count());

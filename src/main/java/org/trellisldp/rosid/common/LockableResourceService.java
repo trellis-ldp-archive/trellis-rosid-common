@@ -18,7 +18,6 @@ import static org.slf4j.LoggerFactory.getLogger;
 import static org.trellisldp.rosid.common.RosidConstants.ZNODE_COORDINATION;
 import static org.trellisldp.spi.RDFUtils.getInstance;
 
-import org.apache.commons.rdf.api.Dataset;
 import org.apache.commons.rdf.api.IRI;
 import org.apache.commons.rdf.api.RDF;
 import org.apache.curator.framework.CuratorFramework;
@@ -36,13 +35,13 @@ abstract class LockableResourceService implements ResourceService {
 
     private static final Logger LOGGER = getLogger(LockableResourceService.class);
 
-    protected final Producer<String, Dataset> producer;
+    protected final Producer<String, String> producer;
 
     protected final CuratorFramework curator;
 
     protected final RDF rdf = getInstance();
 
-    protected LockableResourceService(final Producer<String, Dataset> producer, final CuratorFramework curator) {
+    protected LockableResourceService(final Producer<String, String> producer, final CuratorFramework curator) {
         this.producer = producer;
         this.curator = curator;
         try {

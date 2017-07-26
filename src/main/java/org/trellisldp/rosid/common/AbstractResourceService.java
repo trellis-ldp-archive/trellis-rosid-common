@@ -61,7 +61,7 @@ public abstract class AbstractResourceService extends LockableResourceService {
      * @param curator the zookeeper curator
      * @param notifications the event service
      */
-    public AbstractResourceService(final Producer<String, Dataset> producer, final CuratorFramework curator,
+    public AbstractResourceService(final Producer<String, String> producer, final CuratorFramework curator,
             final EventService notifications) {
         super(producer, curator);
         this.notifications = notifications;
