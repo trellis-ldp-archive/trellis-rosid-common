@@ -16,7 +16,6 @@ package org.trellisldp.rosid.common;
 import static java.util.Objects.nonNull;
 import static java.util.Optional.of;
 import static org.apache.jena.riot.Lang.NQUADS;
-import static org.apache.jena.riot.RDFDataMgr.read;
 import static org.apache.jena.riot.RDFDataMgr.write;
 import static org.apache.jena.sparql.core.DatasetGraphFactory.create;
 import static org.trellisldp.vocabulary.PROV.endedAtTime;
@@ -24,9 +23,8 @@ import static org.trellisldp.vocabulary.PROV.wasGeneratedBy;
 import static org.trellisldp.vocabulary.Trellis.PreferAudit;
 import static org.trellisldp.vocabulary.XSD.dateTime;
 
-import java.time.Instant;
-import java.io.StringReader;
 import java.io.StringWriter;
+import java.time.Instant;
 import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
@@ -37,6 +35,7 @@ import org.apache.commons.rdf.api.IRI;
 import org.apache.commons.rdf.api.Quad;
 import org.apache.commons.rdf.api.RDF;
 import org.apache.commons.rdf.jena.JenaRDF;
+import org.apache.jena.riot.RDFParser;
 import org.apache.jena.sparql.core.DatasetGraph;
 
 /**
@@ -110,6 +109,11 @@ final class RDFUtils {
         return of(identifier.lastIndexOf('/')).filter(idx -> idx > 0).map(idx -> identifier.substring(0, idx));
     }
 
+    /**
+     * Serialize a dataset
+     * @param dataset the dataset
+     * @return a string
+     */
     public static String serialize(final Dataset dataset) {
         if (nonNull(dataset)) {
             final DatasetGraph datasetGraph = create();
@@ -121,10 +125,15 @@ final class RDFUtils {
         return "";
     }
 
+    /**
+     * Deserialize a string
+     * @param data the data
+     * @return a Dataset
+     */
     public static Dataset deserialize(final String data) {
         final DatasetGraph dataset = create();
         if (nonNull(data)) {
-            read(dataset, new StringReader(data), null, NQUADS);
+            RDFParser.fromString(data).lang(NQUADS).parse(dataset);
         }
         return rdf.asDataset(dataset);
     }
