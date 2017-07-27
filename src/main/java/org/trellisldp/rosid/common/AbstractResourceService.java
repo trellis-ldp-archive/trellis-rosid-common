@@ -53,9 +53,9 @@ public abstract class AbstractResourceService extends LockableResourceService {
 
     protected final String SKOLEM_BNODE_PREFIX = "trellis:bnode/";
 
-    private final EventService notifications;
+    protected final Boolean async;
 
-    private final Boolean async;
+    protected final EventService notifications;
 
     /**
      * Create an AbstractResourceService with the given producer
