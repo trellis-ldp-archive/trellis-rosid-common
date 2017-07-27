@@ -55,16 +55,20 @@ public abstract class AbstractResourceService extends LockableResourceService {
 
     private final EventService notifications;
 
+    private final Boolean async;
+
     /**
      * Create an AbstractResourceService with the given producer
      * @param producer the kafka producer
      * @param curator the zookeeper curator
      * @param notifications the event service
+     * @param async write cached resources asynchronously if true, synchronously if false
      */
     public AbstractResourceService(final Producer<String, String> producer, final CuratorFramework curator,
-            final EventService notifications) {
+            final EventService notifications, final Boolean async) {
         super(producer, curator);
         this.notifications = notifications;
+        this.async = async;
     }
 
     /**
@@ -126,7 +130,7 @@ public abstract class AbstractResourceService extends LockableResourceService {
             return false;
         }
 
-        final EventProducer eventProducer = new EventProducer(producer, identifier, dataset);
+        final EventProducer eventProducer = new EventProducer(producer, identifier, dataset, async);
         resource.map(Resource::stream).ifPresent(eventProducer::into);
 
         final Instant later = now();
