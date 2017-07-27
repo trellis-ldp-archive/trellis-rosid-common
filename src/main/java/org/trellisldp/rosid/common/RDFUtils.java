@@ -33,7 +33,6 @@ import org.apache.commons.rdf.api.BlankNodeOrIRI;
 import org.apache.commons.rdf.api.Dataset;
 import org.apache.commons.rdf.api.IRI;
 import org.apache.commons.rdf.api.Quad;
-import org.apache.commons.rdf.api.RDF;
 import org.apache.commons.rdf.jena.JenaRDF;
 import org.apache.jena.riot.RDFParser;
 import org.apache.jena.sparql.core.DatasetGraph;
@@ -41,7 +40,7 @@ import org.apache.jena.sparql.core.DatasetGraph;
 /**
  * @author acoburn
  */
-final class RDFUtils {
+public final class RDFUtils {
 
     private static final JenaRDF rdf = new JenaRDF();
 
@@ -56,8 +55,8 @@ final class RDFUtils {
         return dataset.stream(of(PreferAudit), identifier, wasGeneratedBy, null)
             .map(Quad::getObject).filter(term -> term instanceof BlankNodeOrIRI)
             .map(term -> (BlankNodeOrIRI) term)
-            .map(term -> ((RDF)rdf).createQuad(PreferAudit, term, endedAtTime,
-                    ((RDF)rdf).createLiteral(time.toString(), dateTime))).limit(1);
+            .map(term -> (Quad) rdf.createQuad(PreferAudit, term, endedAtTime,
+                    rdf.createLiteral(time.toString(), dateTime))).limit(1);
     }
 
     /**
