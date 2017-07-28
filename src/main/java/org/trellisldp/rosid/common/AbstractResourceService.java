@@ -29,6 +29,7 @@ import static org.trellisldp.vocabulary.Trellis.PreferAudit;
 
 import java.time.Instant;
 import java.util.Optional;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import org.apache.commons.rdf.api.BlankNode;
@@ -51,7 +52,9 @@ public abstract class AbstractResourceService extends LockableResourceService {
 
     private static final Logger LOGGER = getLogger(AbstractResourceService.class);
 
-    protected final String SKOLEM_BNODE_PREFIX = "trellis:bnode/";
+    protected static final String SKOLEM_BNODE_PREFIX = "trellis:bnode/";
+
+    private final Supplier<String> idSupplier;
 
     protected final Boolean async;
 
@@ -65,10 +68,11 @@ public abstract class AbstractResourceService extends LockableResourceService {
      * @param async write cached resources asynchronously if true, synchronously if false
      */
     public AbstractResourceService(final Producer<String, String> producer, final CuratorFramework curator,
-            final EventService notifications, final Boolean async) {
+            final EventService notifications, final Supplier<String> idSupplier, final Boolean async) {
         super(producer, curator);
         this.notifications = notifications;
         this.async = async;
+        this.idSupplier = idSupplier;
     }
 
     /**
@@ -189,5 +193,10 @@ public abstract class AbstractResourceService extends LockableResourceService {
     public Stream<Quad> export(final IRI identifier) {
         // TODO -- implement this
         return empty();
+    }
+
+    @Override
+    public Supplier<String> getIdentifierSupplier() {
+        return idSupplier;
     }
 }

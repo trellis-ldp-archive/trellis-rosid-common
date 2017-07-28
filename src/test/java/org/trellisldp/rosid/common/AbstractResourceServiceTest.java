@@ -36,6 +36,7 @@ import org.trellisldp.spi.ResourceService;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import org.apache.commons.rdf.api.BlankNode;
@@ -83,6 +84,9 @@ public class AbstractResourceServiceTest {
     private static CuratorFramework mockCurator;
 
     @Mock
+    private static Supplier<String> mockIdSupplier;
+
+    @Mock
     private EventService mockEventService;
 
     @Mock
@@ -100,7 +104,7 @@ public class AbstractResourceServiceTest {
         public MyResourceService(final CuratorFramework curator, final EventService eventService,
                 final InterProcessLock lock) {
             super(new MockProducer<>(true, new StringSerializer(), new StringSerializer()), curator, eventService,
-                    false);
+                    mockIdSupplier, false);
             this.lock = lock;
         }
 
@@ -165,6 +169,8 @@ public class AbstractResourceServiceTest {
         assertEquals(of(resource), svc.getContainer(child));
         assertEquals(of(root), svc.getContainer(resource));
         assertEquals(empty(), svc.getContainer(root));
+
+        assertEquals(mockIdSupplier, svc.getIdentifierSupplier());
     }
 
     @Test
