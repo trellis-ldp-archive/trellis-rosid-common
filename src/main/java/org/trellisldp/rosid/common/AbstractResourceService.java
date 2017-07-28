@@ -65,6 +65,7 @@ public abstract class AbstractResourceService extends LockableResourceService {
      * @param producer the kafka producer
      * @param curator the zookeeper curator
      * @param notifications the event service
+     * @param idSupplier a supplier of new identifiers
      * @param async write cached resources asynchronously if true, synchronously if false
      */
     public AbstractResourceService(final Producer<String, String> producer, final CuratorFramework curator,
