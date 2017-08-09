@@ -1,6 +1,7 @@
 # trellis-rosid-common
 
 [![Build Status](https://travis-ci.org/trellis-ldp/trellis-rosid-common.png?branch=master)](https://travis-ci.org/trellis-ldp/trellis-rosid-common)
+[![Build status](https://ci.appveyor.com/api/projects/status/vij09cj4odyle518?svg=true)](https://ci.appveyor.com/project/acoburn/trellis-rosid-common)
 [![Coverage Status](https://coveralls.io/repos/github/trellis-ldp/trellis-rosid-common/badge.svg?branch=master)](https://coveralls.io/github/trellis-ldp/trellis-rosid-common?branch=master)
 
 
