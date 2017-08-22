@@ -29,7 +29,6 @@ import org.apache.commons.rdf.api.Dataset;
 import org.apache.commons.rdf.api.IRI;
 import org.apache.commons.rdf.api.Literal;
 import org.apache.commons.rdf.api.Triple;
-import org.trellisldp.vocabulary.ACL;
 import org.trellisldp.vocabulary.DC;
 import org.trellisldp.vocabulary.LDP;
 import org.trellisldp.vocabulary.OA;
@@ -107,11 +106,6 @@ public class ResourceData {
     public String annotationService;
 
     /**
-     * The acl:accessControl for the resource, if available
-     */
-    public String accessControl;
-
-    /**
      * The modification date
      */
     public Instant modified;
@@ -181,9 +175,6 @@ public class ResourceData {
 
         dataset.getGraph(Trellis.PreferUserManaged).ifPresent(graph -> {
             rd.userTypes = graph.stream(identifier, RDF.type, null).map(objectUriAsString).collect(toList());
-
-            graph.stream(identifier, ACL.accessControl, null).findFirst().map(objectUriAsString)
-                .ifPresent(res -> rd.accessControl = res);
 
             graph.stream(identifier, LDP.inbox, null).findFirst().map(objectUriAsString)
                 .ifPresent(res -> rd.inbox = res);

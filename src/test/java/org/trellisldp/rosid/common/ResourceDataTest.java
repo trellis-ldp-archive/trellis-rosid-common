@@ -60,7 +60,6 @@ public class ResourceDataTest {
         assertEquals(LDP.Container.getIRIString(), res.ldpType);
         assertTrue(res.userTypes.contains("http://example.org/ns/CustomType"));
         assertEquals("http://receiver.example.org/inbox", res.inbox);
-        assertEquals("trellis:repository/acl/public", res.accessControl);
         assertEquals("file:/path/to/binary", res.binary.id);
         assertEquals("image/jpeg", res.binary.format);
         assertEquals(new Long(103527L), res.binary.size);
