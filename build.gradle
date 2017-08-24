@@ -110,6 +110,7 @@ jar {
         vendor project.vendor
         license project.license
 
+        instruction 'Automatic-Module-Name', 'org.trellisldp.rosid.common'
         instruction 'Import-Package', '*'
         instruction 'Export-Package', "org.trellisldp.rosid.common;version=${projectOsgiVersion}"
     }
