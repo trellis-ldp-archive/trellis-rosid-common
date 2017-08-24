@@ -57,6 +57,8 @@ import org.apache.kafka.clients.producer.MockProducer;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.trellisldp.spi.RuntimeRepositoryException;
@@ -93,6 +95,9 @@ public class AbstractResourceServiceTest {
 
     @Mock
     private InterProcessLock mockLock;
+
+    @Captor
+    private ArgumentCaptor<Notification> notificationCaptor;
 
     public static class MyResourceService extends AbstractResourceService {
 
@@ -197,7 +202,9 @@ public class AbstractResourceServiceTest {
         assertFalse(svc.put(resource, dataset));
         assertTrue(svc.put(existing, dataset));
         assertFalse(svc.put(unwritable, dataset));
-        verify(mockEventService, times(1)).emit(any(Notification.class));
+        verify(mockEventService).emit(notificationCaptor.capture());
+        assertEquals(of(rdf.createIRI("http://example.com/repository/existing")),
+                notificationCaptor.getValue().getTarget());
     }
 
     @Test
