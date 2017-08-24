@@ -15,6 +15,7 @@ package org.trellisldp.rosid.common;
 
 import static java.time.Instant.now;
 import static java.util.Objects.nonNull;
+import static java.util.Objects.requireNonNull;
 import static java.util.Optional.of;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.stream.Stream.concat;
@@ -77,6 +78,9 @@ public abstract class AbstractResourceService extends LockableResourceService {
             final CuratorFramework curator, final EventService notifications, final Supplier<String> idSupplier,
             final Boolean async) {
         super(producer, curator);
+
+        requireNonNull(partitions, "partition configuration may not be null!");
+
         this.partitions = partitions;
         this.notifications = notifications;
         this.async = async;
