@@ -22,12 +22,14 @@ import static java.util.stream.Stream.empty;
 import static org.slf4j.LoggerFactory.getLogger;
 import static org.trellisldp.rosid.common.RDFUtils.endedAtQuad;
 import static org.trellisldp.rosid.common.RDFUtils.getParent;
+import static org.trellisldp.spi.RDFUtils.toExternalTerm;
 import static org.trellisldp.vocabulary.AS.Create;
 import static org.trellisldp.vocabulary.AS.Delete;
 import static org.trellisldp.vocabulary.RDF.type;
 import static org.trellisldp.vocabulary.Trellis.PreferAudit;
 
 import java.time.Instant;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
@@ -60,17 +62,22 @@ public abstract class AbstractResourceService extends LockableResourceService {
 
     protected final EventService notifications;
 
+    protected final Map<String, String> partitions;
+
     /**
      * Create an AbstractResourceService with the given producer
+     * @param partitions the partitions
      * @param producer the kafka producer
      * @param curator the zookeeper curator
      * @param notifications the event service
      * @param idSupplier a supplier of new identifiers
      * @param async write cached resources asynchronously if true, synchronously if false
      */
-    public AbstractResourceService(final Producer<String, String> producer, final CuratorFramework curator,
-            final EventService notifications, final Supplier<String> idSupplier, final Boolean async) {
+    public AbstractResourceService(final Map<String, String> partitions, final Producer<String, String> producer,
+            final CuratorFramework curator, final EventService notifications, final Supplier<String> idSupplier,
+            final Boolean async) {
         super(producer, curator);
+        this.partitions = partitions;
         this.notifications = notifications;
         this.async = async;
         this.idSupplier = idSupplier;
@@ -109,7 +116,8 @@ public abstract class AbstractResourceService extends LockableResourceService {
         }
 
         if (status && nonNull(notifications)) {
-            notifications.emit(new Notification(identifier.getIRIString(), dataset));
+            final String baseUrl = partitions.get(identifier.getIRIString().split(":", 2)[1].split("/")[0]);
+            notifications.emit(new Notification(toExternalTerm(identifier, baseUrl).getIRIString(), dataset));
         }
 
         return status;

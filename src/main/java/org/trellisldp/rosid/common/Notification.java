@@ -90,6 +90,7 @@ public class Notification implements Event {
 
     @Override
     public Collection<IRI> getTargetTypes() {
+        // TODO JDK 9 q.e.d.
         final Set<IRI> graphs = new HashSet<>();
         graphs.add(Trellis.PreferServerManaged);
         graphs.add(Trellis.PreferUserManaged);

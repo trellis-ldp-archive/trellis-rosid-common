@@ -13,6 +13,7 @@
  */
 package org.trellisldp.rosid.common;
 
+import static java.util.Collections.singletonMap;
 import static java.util.Objects.nonNull;
 import static java.util.Optional.empty;
 import static java.util.Optional.of;
@@ -34,6 +35,7 @@ import org.trellisldp.api.Resource;
 import org.trellisldp.spi.ResourceService;
 
 import java.time.Instant;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
@@ -95,6 +97,7 @@ public class AbstractResourceServiceTest {
     public static class MyResourceService extends AbstractResourceService {
 
         private InterProcessLock lock;
+        private static final Map<String, String> partitions = singletonMap("repository", "http://example.com/");
 
         public MyResourceService(final String connectString, final EventService eventService,
                 final InterProcessLock lock) {
@@ -103,8 +106,8 @@ public class AbstractResourceServiceTest {
 
         public MyResourceService(final CuratorFramework curator, final EventService eventService,
                 final InterProcessLock lock) {
-            super(new MockProducer<>(true, new StringSerializer(), new StringSerializer()), curator, eventService,
-                    mockIdSupplier, false);
+            super(partitions, new MockProducer<>(true, new StringSerializer(), new StringSerializer()), curator,
+                    eventService, mockIdSupplier, false);
             this.lock = lock;
         }
 
