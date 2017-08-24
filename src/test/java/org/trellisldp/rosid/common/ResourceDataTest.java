@@ -62,7 +62,7 @@ public class ResourceDataTest {
         assertEquals("http://receiver.example.org/inbox", res.inbox);
         assertEquals("file:/path/to/binary", res.binary.id);
         assertEquals("image/jpeg", res.binary.format);
-        assertEquals((Long) 103527L, res.binary.size);
+        assertEquals(Long.valueOf(103527L), res.binary.size);
         assertNull(res.insertedContentRelation);
     }
 
