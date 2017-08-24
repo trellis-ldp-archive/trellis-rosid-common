@@ -22,6 +22,7 @@ import static java.util.stream.Stream.empty;
 import static org.slf4j.LoggerFactory.getLogger;
 import static org.trellisldp.rosid.common.RDFUtils.endedAtQuad;
 import static org.trellisldp.rosid.common.RDFUtils.getParent;
+import static org.trellisldp.spi.ResourceService.TRELLIS_PREFIX;
 import static org.trellisldp.vocabulary.AS.Create;
 import static org.trellisldp.vocabulary.AS.Delete;
 import static org.trellisldp.vocabulary.RDF.type;
@@ -167,6 +168,30 @@ public abstract class AbstractResourceService extends LockableResourceService {
             final String iri = ((IRI) term).getIRIString();
             if (iri.startsWith(SKOLEM_BNODE_PREFIX)) {
                 return rdf.createBlankNode(iri.substring(SKOLEM_BNODE_PREFIX.length()));
+            }
+        }
+        return term;
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public <T extends RDFTerm> T toExternalTerm(final T term, final String baseUrl) {
+        if (term instanceof IRI) {
+            final String iri = ((IRI) term).getIRIString();
+            if (iri.startsWith(TRELLIS_PREFIX)) {
+                return (T) rdf.createIRI(baseUrl + iri.substring(TRELLIS_PREFIX.length()));
+            }
+        }
+        return term;
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public <T extends RDFTerm> T toInternalTerm(final T term, final String baseUrl) {
+        if (term instanceof IRI) {
+            final String iri = ((IRI) term).getIRIString();
+            if (iri.startsWith(baseUrl)) {
+                return (T) rdf.createIRI(TRELLIS_PREFIX + iri.substring(baseUrl.length()));
             }
         }
         return term;

@@ -114,4 +114,16 @@ public class RDFUtilsTest {
         assertTrue(literal instanceof Literal);
         assertEquals(time.toString(), ((Literal) literal).getLexicalForm());
     }
+
+    @Test
+    public void testSerialize() {
+        final String data = "<info:foo> <ex:bar> \"A literal\"@en .\n<info:foo> <ex:baz> <info:trellis> .\n";
+        final String dataInv = "<info:foo> <ex:baz> <info:trellis> .\n<info:foo> <ex:bar> \"A literal\"@en .\n";
+        final String serialized = RDFUtils.serialize(RDFUtils.deserialize(data));
+        assertTrue(serialized.equals(data) || serialized.equals(dataInv));
+        assertEquals("", RDFUtils.serialize(null));
+
+        assertEquals(2L, RDFUtils.deserialize(data).size());
+        assertEquals(0L, RDFUtils.deserialize(null).size());
+    }
 }

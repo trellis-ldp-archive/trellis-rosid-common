@@ -28,6 +28,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
 import static org.trellisldp.rosid.common.RosidConstants.ZNODE_COORDINATION;
+import static org.trellisldp.spi.ResourceService.TRELLIS_PREFIX;
 import static org.trellisldp.vocabulary.RDF.type;
 
 import org.trellisldp.api.Resource;
@@ -42,6 +43,7 @@ import java.util.stream.Stream;
 import org.apache.commons.rdf.api.BlankNode;
 import org.apache.commons.rdf.api.Dataset;
 import org.apache.commons.rdf.api.IRI;
+import org.apache.commons.rdf.api.Literal;
 import org.apache.commons.rdf.api.Quad;
 import org.apache.commons.rdf.api.RDF;
 import org.apache.commons.rdf.jena.JenaRDF;
@@ -257,5 +259,22 @@ public class AbstractResourceServiceTest {
         assertTrue(svc.put(resource, dataset));
         assertTrue(svc.put(existing, dataset));
         verify(mockEventService, times(2)).emit(any(Notification.class));
+    }
+
+    @Test
+    public void testToInternalTerm() {
+        final String baseUrl = "http://example.org/";
+        final String path = "repo/resource";
+        final IRI internalIRI = rdf.createIRI(TRELLIS_PREFIX + path);
+        final IRI externalIRI = rdf.createIRI(baseUrl + path);
+        final IRI otherIRI = rdf.createIRI("http://example.com/foo/bar");
+        final Literal literal = rdf.createLiteral("some value");
+        final ResourceService svc = new MyResourceService(curator.getConnectString(), mockEventService, null);
+        assertEquals(externalIRI, svc.toExternalTerm(internalIRI, baseUrl));
+        assertEquals(internalIRI, svc.toInternalTerm(externalIRI, baseUrl));
+        assertEquals(otherIRI, svc.toExternalTerm(otherIRI, baseUrl));
+        assertEquals(otherIRI, svc.toInternalTerm(otherIRI, baseUrl));
+        assertEquals(literal, svc.toExternalTerm(literal, baseUrl));
+        assertEquals(literal, svc.toInternalTerm(literal, baseUrl));
     }
 }
