@@ -29,6 +29,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.trellisldp.vocabulary.DC;
 import org.trellisldp.vocabulary.LDP;
+import org.trellisldp.vocabulary.OA;
+import org.trellisldp.vocabulary.RDFS;
 import org.trellisldp.vocabulary.Trellis;
 import org.trellisldp.vocabulary.XSD;
 import org.apache.commons.rdf.api.Dataset;
@@ -56,34 +58,39 @@ public class ResourceDataTest {
         final ResourceData res = MAPPER.readValue(getClass().getResourceAsStream("/resource1.json"),
                 ResourceData.class);
 
-        assertEquals("trellis:repository/resource1", res.id);
-        assertEquals(LDP.Container.getIRIString(), res.ldpType);
-        assertTrue(res.userTypes.contains("http://example.org/ns/CustomType"));
-        assertEquals("http://receiver.example.org/inbox", res.inbox);
-        assertEquals("file:/path/to/binary", res.binary.id);
-        assertEquals("image/jpeg", res.binary.format);
-        assertEquals(Long.valueOf(103527L), res.binary.size);
-        assertNull(res.insertedContentRelation);
+        assertEquals("trellis:repository/resource1", res.getId());
+        assertEquals(LDP.Container.getIRIString(), res.getLdpType());
+        assertTrue(res.getUserTypes().contains("http://example.org/ns/CustomType"));
+        assertEquals("http://receiver.example.org/inbox", res.getInbox());
+        assertEquals("file:/path/to/binary", res.getBinary().getId());
+        assertEquals("image/jpeg", res.getBinary().getFormat());
+        assertEquals(Long.valueOf(103527L), res.getBinary().getSize());
+        assertNull(res.getInsertedContentRelation());
     }
 
     @Test
     public void testRDFSource() {
         final IRI identifier = rdf.createIRI("trellis:repository/resource");
         final IRI inbox = rdf.createIRI("http://example.com/receiver/inbox");
+        final IRI annotationService = rdf.createIRI("http://example.com/annotations");
         final Instant time = now();
         final Literal modified = rdf.createLiteral(time.toString(), XSD.dateTime);
         final Dataset dataset = rdf.createDataset();
-        dataset.add(rdf.createQuad(Trellis.PreferUserManaged, identifier, LDP.inbox, inbox));
         dataset.add(rdf.createQuad(Trellis.PreferServerManaged, identifier, type, LDP.RDFSource));
         dataset.add(rdf.createQuad(Trellis.PreferServerManaged, identifier, DC.modified, modified));
+        dataset.add(rdf.createQuad(Trellis.PreferUserManaged, identifier, LDP.inbox, inbox));
+        dataset.add(rdf.createQuad(Trellis.PreferUserManaged, identifier, OA.annotationService,
+                    annotationService));
 
         final Optional<ResourceData> rd = ResourceData.from(identifier, dataset);
         assertTrue(rd.isPresent());
         rd.ifPresent(data -> {
-            assertEquals(identifier.getIRIString(), data.id);
-            assertEquals(inbox.getIRIString(), data.inbox);
-            assertEquals(LDP.RDFSource.getIRIString(), data.ldpType);
-            assertEquals(time, data.modified);
+            assertEquals(identifier.getIRIString(), data.getId());
+            assertEquals(inbox.getIRIString(), data.getInbox());
+            assertEquals(LDP.RDFSource.getIRIString(), data.getLdpType());
+            assertEquals(time, data.getModified());
+            assertEquals("http://www.trellisrepo.org/ns/trellisresource.jsonld", data.getContext());
+            assertEquals(annotationService.getIRIString(), data.getAnnotationService());
         });
     }
 
@@ -109,15 +116,46 @@ public class ResourceDataTest {
         final Optional<ResourceData> rd = ResourceData.from(identifier, dataset);
         assertTrue(rd.isPresent());
         rd.ifPresent(data -> {
-            assertEquals(identifier.getIRIString(), data.id);
-            assertEquals(inbox.getIRIString(), data.inbox);
-            assertEquals(LDP.NonRDFSource.getIRIString(), data.ldpType);
-            assertEquals(time, data.modified);
-            assertNotNull(data.binary);
-            assertEquals(binary.getIRIString(), data.binary.id);
-            assertEquals(12345L, (long) data.binary.size);
-            assertEquals(format.getLexicalForm(), data.binary.format);
-            assertEquals(time, data.binary.modified);
+            assertEquals(identifier.getIRIString(), data.getId());
+            assertEquals(inbox.getIRIString(), data.getInbox());
+            assertEquals(LDP.NonRDFSource.getIRIString(), data.getLdpType());
+            assertEquals(time, data.getModified());
+            assertNotNull(data.getBinary());
+            assertEquals(binary.getIRIString(), data.getBinary().getId());
+            assertEquals(12345L, (long) data.getBinary().getSize());
+            assertEquals(format.getLexicalForm(), data.getBinary().getFormat());
+            assertEquals(time, data.getBinary().getModified());
+        });
+    }
+
+    @Test
+    public void testIndirectContainer() {
+        final IRI identifier = rdf.createIRI("trellis:repository/resource");
+        final IRI other = rdf.createIRI("trellis:repository/other");
+        final IRI diff = rdf.createIRI("trellis:repository/diff");
+        final Instant time = now();
+        final Literal modified = rdf.createLiteral(time.toString(), XSD.dateTime);
+
+        final Dataset dataset = rdf.createDataset();
+        dataset.add(rdf.createQuad(Trellis.PreferServerManaged, identifier, type, LDP.IndirectContainer));
+        dataset.add(rdf.createQuad(Trellis.PreferServerManaged, identifier, DC.modified, modified));
+        dataset.add(rdf.createQuad(Trellis.PreferUserManaged, identifier, LDP.insertedContentRelation,
+                    RDFS.label));
+        dataset.add(rdf.createQuad(Trellis.PreferUserManaged, identifier, LDP.hasMemberRelation, DC.title));
+        dataset.add(rdf.createQuad(Trellis.PreferUserManaged, identifier, LDP.membershipResource, other));
+        dataset.add(rdf.createQuad(Trellis.PreferUserManaged, identifier, LDP.isMemberOfRelation, diff));
+
+        final Optional<ResourceData> rd = ResourceData.from(identifier, dataset);
+        assertTrue(rd.isPresent());
+        rd.ifPresent(data -> {
+            assertEquals(identifier.getIRIString(), data.getId());
+            assertEquals(RDFS.label.getIRIString(), data.getInsertedContentRelation());
+            assertEquals(DC.title.getIRIString(), data.getHasMemberRelation());
+            assertEquals(other.getIRIString(), data.getMembershipResource());
+            assertEquals(LDP.IndirectContainer.getIRIString(), data.getLdpType());
+            assertEquals(time, data.getModified());
+            assertEquals(diff.getIRIString(), data.getIsMemberOfRelation());
+            assertNull(data.getBinary());
         });
     }
 }

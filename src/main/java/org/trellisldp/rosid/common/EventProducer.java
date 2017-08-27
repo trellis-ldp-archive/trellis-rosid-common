@@ -158,7 +158,7 @@ class EventProducer {
 
             for (final Future<RecordMetadata> result : results) {
                 final RecordMetadata res = result.get();
-                LOGGER.debug("Send record to topic: {}, {}", res.topic(), res.timestamp());
+                LOGGER.debug("Send record to topic: {}, {}", res, res.timestamp());
             }
 
             return true;
@@ -172,17 +172,18 @@ class EventProducer {
      * Stream out the added quads
      * @return the added quads
      */
-    public Stream<? extends Quad> getAdded() {
-        return dataset.stream().filter(q -> !existing.contains(q));
+    public Stream<Quad> getAdded() {
+        return dataset.stream().filter(q -> !existing.contains(q)).map(q -> (Quad) q);
     }
 
     /**
      * Stream out the removed quads
      * @return the removed quads
      */
-    public Stream<? extends Quad> getRemoved() {
+    public Stream<Quad> getRemoved() {
         return existing.stream().filter(q -> !dataset.contains(q))
-            .filter(q -> !q.getGraphName().equals(of(PreferServerManaged)) || !modified.equals(q.getPredicate()));
+            .filter(q -> !q.getGraphName().equals(of(PreferServerManaged)) || !modified.equals(q.getPredicate()))
+            .map(q -> (Quad) q);
     }
 
     /**

@@ -44,91 +44,291 @@ public class ResourceData {
      * The binary-specific data
      */
     public static class BinaryData {
-        /**
-         * The binary object identifier
-         */
-        @JsonProperty("@id")
-        public String id;
+
+        private String id;
+        private String format;
+        private Long size;
+        private Instant modified;
 
         /**
-         * The binary object format (MIMEType)
+         * Get the binary object identifier
+         * @return the binary identifier
          */
-        public String format;
+        @JsonProperty("@id")
+        public String getId() {
+            return id;
+        }
+
+        /**
+         * Set the identifier for the binary object
+         * @param id the identifier
+         */
+        @JsonProperty("@id")
+        public void setId(final String id) {
+            this.id = id;
+        }
+
+        /**
+         * Get the binary object format (MIMEType)
+         * @return the binary object MIMEType
+         */
+        public String getFormat() {
+            return format;
+        }
+
+        /**
+         * Set the binary object format
+         * @param format the MIMEType of the binary object
+         */
+        public void setFormat(final String format) {
+            this.format = format;
+        }
 
         /**
          * The binary object size
+         * @return the binary size
          */
-        public Long size;
+        public Long getSize() {
+            return size;
+        }
 
         /**
-         * The modification date of the binary object
+         * Set the binary object size
+         * @param size the size of the binary
          */
-        public Instant modified;
+        public void setSize(final Long size) {
+            this.size = size;
+        }
+
+        /**
+         * Get the modification date of the binary object
+         * @return the modification value
+         */
+        public Instant getModified() {
+            return modified;
+        }
+
+        /**
+         * Set the modification value
+         * @param modified the modified value
+         */
+        public void setModified(final Instant modified) {
+            this.modified = modified;
+        }
     }
+
+    private String context = "http://www.trellisrepo.org/ns/trellisresource.jsonld";
+    private String id;
+    private String ldpType;
+    private List<String> userTypes;
+    private BinaryData binary;
+    private String insertedContentRelation;
+    private String isMemberOfRelation;
+    private String hasMemberRelation;
+    private String membershipResource;
+    private Instant modified;
+    private String annotationService;
+    private String inbox;
 
     /**
      * The JSON-LD context of the resource data
+     * @return the context value
      */
     @JsonProperty("@context")
-    public String context = "http://www.trellisrepo.org/ns/trellisresource.jsonld";
+    public String getContext() {
+        return context;
+    }
 
     /**
-     * The resource identifier
+     * Set the JSON-LD context
+     * @param context the context value
+     */
+    @JsonProperty("@context")
+    public void setContext(final String context) {
+        this.context = context;
+    }
+
+    /**
+     * Get the resource identifier
+     * @return the resource identifier
      */
     @JsonProperty("@id")
-    public String id;
+    public String getId() {
+        return id;
+    }
 
     /**
-     * The interaction model for the resource
+     * Set the resource identifier
+     * @param id the resource identifier
+     */
+    @JsonProperty("@id")
+    public void setId(final String id) {
+        this.id = id;
+    }
+
+    /**
+     * Get the interaction model for the resource
+     * @return the LDP type of the resource
      */
     @JsonProperty("@type")
-    public String ldpType;
+    public String getLdpType() {
+        return ldpType;
+    }
 
     /**
-     * Any additional RDF types for the resource
+     * Set the interaction model for the resource
+     * @param ldpType the LDP type of the resource
+     */
+    @JsonProperty("@type")
+    public void setLdpType(final String ldpType) {
+        this.ldpType = ldpType;
+    }
+
+    /**
+     * Get any additional RDF types for the resource
+     * @return the user-defined RDF types
      */
     @JsonProperty("type")
-    public List<String> userTypes;
+    public List<String> getUserTypes() {
+        return userTypes;
+    }
 
     /**
-     * The binary object data, if available
+     * Set any additional RDF types for the resource
+     * @param userTypes the user-defined RDF types
      */
-    public BinaryData binary;
+    @JsonProperty("type")
+    public void setUserTypes(final List<String> userTypes) {
+        this.userTypes = userTypes;
+    }
 
     /**
-     * An ldp:inbox for the resource, if available
+     * Get the binary object data, if available
+     * @return the binary data
      */
-    public String inbox;
+    public BinaryData getBinary() {
+        return binary;
+    }
 
     /**
-     * The oa:annotationService for the resource, if available
+     * Set the binary object data, if relevant
+     * @param binary the binary data
      */
-    public String annotationService;
+    public void setBinary(final BinaryData binary) {
+        this.binary = binary;
+    }
 
     /**
-     * The modification date
+     * Get the ldp:inbox for the resource, if available
+     * @return the inbox value
      */
-    public Instant modified;
+    public String getInbox() {
+        return inbox;
+    }
 
     /**
-     * The ldp:membershipResource, if available
+     * Set the ldp:inbox for the resource, if available
+     * @param inbox the ldp:inbox value
      */
-    public String membershipResource;
+    public void setInbox(final String inbox) {
+        this.inbox = inbox;
+    }
 
     /**
-     * The ldp:hasMemberRelation, if available
+     * Get the oa:annotationService for the resource, if available
+     * @return the annotation service IRI
      */
-    public String hasMemberRelation;
+    public String getAnnotationService() {
+        return annotationService;
+    }
 
     /**
-     * The ldp:isMemberOfRelation, if available
+     * Set the oa:annotationService for the resource, if available
+     * @param annotationService the annotation service IRI
      */
-    public String isMemberOfRelation;
+    public void setAnnotationService(final String annotationService) {
+        this.annotationService = annotationService;
+    }
 
     /**
-     * The ldp:insertedContentRelation, if available
+     * Get the modification date
+     * @return the modification date
      */
-    public String insertedContentRelation;
+    public Instant getModified() {
+        return modified;
+    }
+
+    /**
+     * Set the modification date
+     * @param modified the modification date
+     */
+    public void setModified(final Instant modified) {
+        this.modified = modified;
+    }
+
+    /**
+     * Get the ldp:membershipResource, if available
+     * @return the ldp:membershipResource IRI
+     */
+    public String getMembershipResource() {
+        return membershipResource;
+    }
+
+    /**
+     * Set the ldp:membershipResource, if available
+     * @param membershipResource the ldp:membershipResource IRI
+     */
+    public void setMembershipResource(final String membershipResource) {
+        this.membershipResource = membershipResource;
+    }
+
+    /**
+     * Get the ldp:hasMemberRelation, if available
+     * @return the ldp:hasMemberRelation IRI
+     */
+    public String getHasMemberRelation() {
+        return hasMemberRelation;
+    }
+
+    /**
+     * Set the ldp:hasMemberRelation, if available
+     * @param hasMemberRelation the ldp:hasMemberRelation IRI
+     */
+    public void setHasMemberRelation(final String hasMemberRelation) {
+        this.hasMemberRelation = hasMemberRelation;
+    }
+
+    /**
+     * Get the ldp:isMemberOfRelation, if available
+     * @return the ldp:isMemberOfRelation IRI
+     */
+    public String getIsMemberOfRelation() {
+        return isMemberOfRelation;
+    }
+
+    /**
+     * Set the ldp:isMemberOfRelation, if available
+     * @param isMemberOfRelation the ldp:isMemberOfRelation IRI
+     */
+    public void setIsMemberOfRelation(final String isMemberOfRelation) {
+        this.isMemberOfRelation = isMemberOfRelation;
+    }
+
+    /**
+     * Get the ldp:insertedContentRelation, if available
+     * @return the ldp:insertedContentRelation IRI
+     */
+    public String getInsertedContentRelation() {
+        return insertedContentRelation;
+    }
+
+    /**
+     * Set the ldp:insertedContentRelation, if available
+     * @param insertedContentRelation the ldp:insertedContentRelation IRI
+     */
+    public void setInsertedContentRelation(final String insertedContentRelation) {
+        this.insertedContentRelation = insertedContentRelation;
+    }
 
     private static final Function<Triple, String> objectUriAsString = triple ->
         ((IRI) triple.getObject()).getIRIString();
@@ -147,53 +347,51 @@ public class ResourceData {
         requireNonNull(dataset, "dataset may not be null!");
 
         final ResourceData rd = new ResourceData();
-        rd.id = identifier.getIRIString();
+        rd.setId(identifier.getIRIString());
 
         dataset.getGraph(Trellis.PreferServerManaged).ifPresent(graph -> {
             graph.stream(identifier, DC.modified, null).findFirst().map(objectLiteralAsString).map(Instant::parse)
-                .ifPresent(date -> rd.modified = date);
+                .ifPresent(rd::setModified);
 
-            graph.stream(identifier, RDF.type, null).findFirst().map(objectUriAsString)
-                .ifPresent(type -> rd.ldpType = type);
+            graph.stream(identifier, RDF.type, null).findFirst().map(objectUriAsString).ifPresent(rd::setLdpType);
 
             // Populate binary, if present
             graph.stream(identifier, DC.hasPart, null).findFirst().map(Triple::getObject).map(x -> (IRI) x)
                     .ifPresent(id -> {
-                rd.binary = new ResourceData.BinaryData();
-                rd.binary.id = id.getIRIString();
+                rd.setBinary(new ResourceData.BinaryData());
+                rd.getBinary().setId(id.getIRIString());
 
                 graph.stream(id, DC.modified, null).findFirst().map(objectLiteralAsString).map(Instant::parse)
-                    .ifPresent(date -> rd.binary.modified = date);
+                    .ifPresent(rd.getBinary()::setModified);
 
                 graph.stream(id, DC.format, null).findFirst().map(objectLiteralAsString)
-                    .ifPresent(format -> rd.binary.format = format);
+                    .ifPresent(rd.getBinary()::setFormat);
 
                 graph.stream(id, DC.extent, null).findFirst().map(objectLiteralAsString).map(Long::parseLong)
-                    .ifPresent(size -> rd.binary.size = size);
+                    .ifPresent(rd.getBinary()::setSize);
             });
         });
 
         dataset.getGraph(Trellis.PreferUserManaged).ifPresent(graph -> {
-            rd.userTypes = graph.stream(identifier, RDF.type, null).map(objectUriAsString).collect(toList());
+            rd.setUserTypes(graph.stream(identifier, RDF.type, null).map(objectUriAsString).collect(toList()));
 
-            graph.stream(identifier, LDP.inbox, null).findFirst().map(objectUriAsString)
-                .ifPresent(res -> rd.inbox = res);
+            graph.stream(identifier, LDP.inbox, null).findFirst().map(objectUriAsString).ifPresent(rd::setInbox);
 
             graph.stream(identifier, LDP.membershipResource, null).findFirst().map(objectUriAsString)
-                .ifPresent(res -> rd.membershipResource = res);
+                .ifPresent(rd::setMembershipResource);
 
             graph.stream(identifier, LDP.hasMemberRelation, null).findFirst().map(objectUriAsString)
-                .ifPresent(res -> rd.hasMemberRelation = res);
+                .ifPresent(rd::setHasMemberRelation);
 
             graph.stream(identifier, LDP.isMemberOfRelation, null).findFirst().map(objectUriAsString)
-                .ifPresent(res -> rd.isMemberOfRelation = res);
+                .ifPresent(rd::setIsMemberOfRelation);
 
             graph.stream(identifier, LDP.insertedContentRelation, null).findFirst().map(objectUriAsString)
-                .ifPresent(res -> rd.insertedContentRelation = res);
+                .ifPresent(rd::setInsertedContentRelation);
 
             graph.stream(identifier, OA.annotationService, null).findFirst().map(objectUriAsString)
-                .ifPresent(res -> rd.annotationService = res);
+                .ifPresent(rd::setAnnotationService);
         });
-        return of(rd).filter(x -> nonNull(x.ldpType)).filter(x -> nonNull(x.modified));
+        return of(rd).filter(x -> nonNull(x.getLdpType())).filter(x -> nonNull(x.modified));
     }
 }

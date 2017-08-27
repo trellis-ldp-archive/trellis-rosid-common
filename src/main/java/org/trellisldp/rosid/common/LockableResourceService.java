@@ -14,6 +14,7 @@
 package org.trellisldp.rosid.common;
 
 import static org.apache.commons.codec.digest.DigestUtils.md5Hex;
+import static org.apache.curator.utils.ZKPaths.PATH_SEPARATOR;
 import static org.slf4j.LoggerFactory.getLogger;
 import static org.trellisldp.rosid.common.RosidConstants.ZNODE_COORDINATION;
 import static org.trellisldp.spi.RDFUtils.getInstance;
@@ -53,7 +54,7 @@ abstract class LockableResourceService implements ResourceService {
     }
 
     protected InterProcessLock getLock(final IRI identifier) {
-        final String path = ZNODE_COORDINATION + "/" + md5Hex(identifier.getIRIString());
+        final String path = ZNODE_COORDINATION + PATH_SEPARATOR + md5Hex(identifier.getIRIString());
         return new InterProcessSemaphoreMutex(curator, path);
     }
 }

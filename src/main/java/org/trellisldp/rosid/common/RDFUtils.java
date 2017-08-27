@@ -117,7 +117,7 @@ public final class RDFUtils {
         if (nonNull(dataset)) {
             final DatasetGraph datasetGraph = create();
             final StringWriter str = new StringWriter();
-            dataset.stream().map(quad -> rdf.asJenaQuad(quad)).forEach(datasetGraph::add);
+            dataset.stream().map(rdf::asJenaQuad).forEach(datasetGraph::add);
             write(str, datasetGraph, NQUADS);
             return str.toString();
         }
