@@ -18,13 +18,17 @@ import static java.util.Optional.of;
 import static org.apache.jena.riot.Lang.NQUADS;
 import static org.apache.jena.riot.RDFDataMgr.write;
 import static org.apache.jena.sparql.core.DatasetGraphFactory.create;
+import static org.slf4j.LoggerFactory.getLogger;
 import static org.trellisldp.vocabulary.PROV.endedAtTime;
 import static org.trellisldp.vocabulary.PROV.wasGeneratedBy;
 import static org.trellisldp.vocabulary.Trellis.PreferAudit;
 import static org.trellisldp.vocabulary.XSD.dateTime;
 
+import java.io.IOException;
 import java.io.StringWriter;
+import java.io.UncheckedIOException;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
@@ -36,11 +40,15 @@ import org.apache.commons.rdf.api.Quad;
 import org.apache.commons.rdf.jena.JenaRDF;
 import org.apache.jena.riot.RDFParser;
 import org.apache.jena.sparql.core.DatasetGraph;
+import org.slf4j.Logger;
+import org.trellisldp.spi.RuntimeRepositoryException;
 
 /**
  * @author acoburn
  */
 public final class RDFUtils {
+
+    private static final Logger LOGGER = getLogger(RDFUtils.class);
 
     private static final JenaRDF rdf = new JenaRDF();
 
@@ -109,17 +117,40 @@ public final class RDFUtils {
     }
 
     /**
+     * Serialize a list of quads
+     * @param quads the quads
+     * @return a string
+     */
+    public static String serialize(final List<Quad> quads) {
+        try (final StringWriter str = new StringWriter()) {
+            final DatasetGraph datasetGraph = create();
+            quads.stream().map(rdf::asJenaQuad).forEach(datasetGraph::add);
+            write(str, datasetGraph, NQUADS);
+            datasetGraph.close();
+            return str.toString();
+        } catch (final Exception ex) {
+            LOGGER.error("Error processing dataset in quad serializer: ", ex.getMessage());
+            throw new RuntimeRepositoryException("Error processing dataset", ex);
+        }
+    }
+
+    /**
      * Serialize a dataset
      * @param dataset the dataset
      * @return a string
      */
     public static String serialize(final Dataset dataset) {
         if (nonNull(dataset)) {
-            final DatasetGraph datasetGraph = create();
-            final StringWriter str = new StringWriter();
-            dataset.stream().map(rdf::asJenaQuad).forEach(datasetGraph::add);
-            write(str, datasetGraph, NQUADS);
-            return str.toString();
+            try (final StringWriter str = new StringWriter()) {
+                final DatasetGraph datasetGraph = create();
+                dataset.stream().map(rdf::asJenaQuad).forEach(datasetGraph::add);
+                write(str, datasetGraph, NQUADS);
+                datasetGraph.close();
+                return str.toString();
+            } catch (final IOException ex) {
+                LOGGER.error("Error serializing dataset: {}", ex.getMessage());
+                throw new UncheckedIOException(ex);
+            }
         }
         return "";
     }

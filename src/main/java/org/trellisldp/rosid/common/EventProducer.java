@@ -58,7 +58,7 @@ import org.slf4j.Logger;
 /**
  * @author acoburn
  */
-class EventProducer {
+class EventProducer implements AutoCloseable {
 
     private static final Logger LOGGER = getLogger(EventProducer.class);
 
@@ -99,6 +99,11 @@ class EventProducer {
         this(producer, identifier, dataset, false);
     }
 
+    @Override
+    public void close() throws Exception {
+        existing.close();
+    }
+
     /**
      * Emit messages to the relevant kafka topics
      * @return true if the messages were successfully delivered to the kafka topics; false otherwise
@@ -122,11 +127,8 @@ class EventProducer {
                 .filter(inDomain(domain).and(objectIsSameResource(identifier).negate()))
                 .map(t -> rdf.createQuad(PreferInboundReferences, t.getSubject(), t.getPredicate(), t.getObject()))
                 .collect(groupingBy(q -> ((IRI) q.getObject()).getIRIString()))
-                .entrySet().forEach(e -> {
-                    final Dataset data = rdf.createDataset();
-                    e.getValue().forEach(data::add);
-                    results.add(producer.send(new ProducerRecord<>(TOPIC_INBOUND_ADD, e.getKey(), serialize(data))));
-                });
+                .entrySet().forEach(e -> results.add(producer.send(
+                                new ProducerRecord<>(TOPIC_INBOUND_ADD, e.getKey(), serialize(e.getValue())))));
 
             // Handle the removal of any in-domain outbound triples
             getRemoved()
@@ -135,11 +137,8 @@ class EventProducer {
                 .filter(inDomain(domain).and(objectIsSameResource(identifier).negate()))
                 .map(t -> rdf.createQuad(PreferInboundReferences, t.getSubject(), t.getPredicate(), t.getObject()))
                 .collect(groupingBy(q -> ((IRI) q.getObject()).getIRIString()))
-                .entrySet().forEach(e -> {
-                    final Dataset data = rdf.createDataset();
-                    e.getValue().forEach(data::add);
-                    results.add(producer.send(new ProducerRecord<>(TOPIC_INBOUND_DELETE, e.getKey(), serialize(data))));
-                });
+                .entrySet().forEach(e -> results.add(producer.send(
+                                new ProducerRecord<>(TOPIC_INBOUND_DELETE, e.getKey(), serialize(e.getValue())))));
 
             // Update the containment triples of the parent resource if this is a delete or create operation
             getParent(identifier.getIRIString()).ifPresent(container -> {

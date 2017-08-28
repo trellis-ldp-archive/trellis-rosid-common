@@ -29,7 +29,6 @@ import static org.trellisldp.rosid.common.RosidConstants.TOPIC_LDP_MEMBERSHIP_DE
 import static org.trellisldp.vocabulary.RDF.type;
 
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 import org.apache.commons.rdf.api.BlankNode;
@@ -79,7 +78,7 @@ public class EventProducerTest {
     private Future<RecordMetadata> mockFuture;
 
     @Test
-    public void testEventProducer() {
+    public void testEventProducer() throws Exception {
         final Literal time = rdf.createLiteral(now().toString(), XSD.dateTime);
         final Literal otherTime = rdf.createLiteral(now().plusSeconds(20).toString(), XSD.dateTime);
         final Dataset existing = rdf.createDataset();
@@ -102,20 +101,21 @@ public class EventProducerTest {
         modified.add(rdf.createQuad(Trellis.PreferServerManaged, identifier, type, LDP.Container));
 
         producer.clear();
-        final EventProducer event = new EventProducer(producer, identifier, modified, false);
-        event.into(existing.stream());
+        try (final EventProducer event = new EventProducer(producer, identifier, modified, false)) {
+            event.into(existing.stream());
 
-        assertTrue(event.emit());
-        assertEquals(4L, event.getRemoved().count());
-        assertEquals(5L, event.getAdded().count());
-        final List<ProducerRecord<String, String>> records = producer.history();
-        assertEquals(2L, records.size());
-        assertEquals(1L, records.stream().filter(r -> r.topic().equals(TOPIC_INBOUND_DELETE)).count());
-        assertEquals(1L, records.stream().filter(r -> r.topic().equals(TOPIC_INBOUND_ADD)).count());
+            assertTrue(event.emit());
+            assertEquals(4L, event.getRemoved().count());
+            assertEquals(5L, event.getAdded().count());
+            final List<ProducerRecord<String, String>> records = producer.history();
+            assertEquals(2L, records.size());
+            assertEquals(1L, records.stream().filter(r -> r.topic().equals(TOPIC_INBOUND_DELETE)).count());
+            assertEquals(1L, records.stream().filter(r -> r.topic().equals(TOPIC_INBOUND_ADD)).count());
+        }
     }
 
     @Test
-    public void testEventCreation() {
+    public void testEventCreation() throws Exception {
         final Literal time = rdf.createLiteral(now().toString(), XSD.dateTime);
         final Literal otherTime = rdf.createLiteral(now().plusSeconds(20).toString(), XSD.dateTime);
         final Dataset existing = rdf.createDataset();
@@ -139,22 +139,23 @@ public class EventProducerTest {
         modified.add(rdf.createQuad(Trellis.PreferAudit, rdf.createBlankNode(), type, AS.Create));
 
         producer.clear();
-        final EventProducer event = new EventProducer(producer, identifier, modified);
-        event.into(existing.stream());
+        try (final EventProducer event = new EventProducer(producer, identifier, modified)) {
+            event.into(existing.stream());
 
-        assertEquals(4L, event.getRemoved().count());
-        assertEquals(6L, event.getAdded().count());
-        assertTrue(event.emit());
-        final List<ProducerRecord<String, String>> records = producer.history();
-        assertEquals(4L, records.size());
-        assertEquals(1L, records.stream().filter(r -> r.topic().equals(TOPIC_LDP_CONTAINMENT_ADD)).count());
-        assertEquals(1L, records.stream().filter(r -> r.topic().equals(TOPIC_LDP_MEMBERSHIP_ADD)).count());
-        assertEquals(1L, records.stream().filter(r -> r.topic().equals(TOPIC_INBOUND_DELETE)).count());
-        assertEquals(1L, records.stream().filter(r -> r.topic().equals(TOPIC_INBOUND_ADD)).count());
+            assertEquals(4L, event.getRemoved().count());
+            assertEquals(6L, event.getAdded().count());
+            assertTrue(event.emit());
+            final List<ProducerRecord<String, String>> records = producer.history();
+            assertEquals(4L, records.size());
+            assertEquals(1L, records.stream().filter(r -> r.topic().equals(TOPIC_LDP_CONTAINMENT_ADD)).count());
+            assertEquals(1L, records.stream().filter(r -> r.topic().equals(TOPIC_LDP_MEMBERSHIP_ADD)).count());
+            assertEquals(1L, records.stream().filter(r -> r.topic().equals(TOPIC_INBOUND_DELETE)).count());
+            assertEquals(1L, records.stream().filter(r -> r.topic().equals(TOPIC_INBOUND_ADD)).count());
+        }
     }
 
     @Test
-    public void testEventDeletion() {
+    public void testEventDeletion() throws Exception {
         final Literal time = rdf.createLiteral(now().toString(), XSD.dateTime);
         final Literal otherTime = rdf.createLiteral(now().plusSeconds(20).toString(), XSD.dateTime);
         final Dataset existing = rdf.createDataset();
@@ -179,23 +180,24 @@ public class EventProducerTest {
         modified.add(rdf.createQuad(Trellis.PreferAudit, bnode, type, AS.Delete));
 
         producer.clear();
-        final EventProducer event = new EventProducer(producer, identifier, modified, true);
-        event.into(existing.stream());
+        try (final EventProducer event = new EventProducer(producer, identifier, modified, true)) {
+            event.into(existing.stream());
 
-        assertEquals(4L, event.getRemoved().count());
-        assertEquals(6L, event.getAdded().count());
-        assertTrue(event.emit());
-        final List<ProducerRecord<String, String>> records = producer.history();
-        assertEquals(5L, records.size());
-        assertEquals(1L, records.stream().filter(r -> r.topic().equals(TOPIC_LDP_CONTAINMENT_DELETE)).count());
-        assertEquals(1L, records.stream().filter(r -> r.topic().equals(TOPIC_LDP_MEMBERSHIP_DELETE)).count());
-        assertEquals(1L, records.stream().filter(r -> r.topic().equals(TOPIC_INBOUND_DELETE)).count());
-        assertEquals(1L, records.stream().filter(r -> r.topic().equals(TOPIC_INBOUND_ADD)).count());
-        assertEquals(1L, records.stream().filter(r -> r.topic().equals(TOPIC_CACHE)).count());
+            assertEquals(4L, event.getRemoved().count());
+            assertEquals(6L, event.getAdded().count());
+            assertTrue(event.emit());
+            final List<ProducerRecord<String, String>> records = producer.history();
+            assertEquals(5L, records.size());
+            assertEquals(1L, records.stream().filter(r -> r.topic().equals(TOPIC_LDP_CONTAINMENT_DELETE)).count());
+            assertEquals(1L, records.stream().filter(r -> r.topic().equals(TOPIC_LDP_MEMBERSHIP_DELETE)).count());
+            assertEquals(1L, records.stream().filter(r -> r.topic().equals(TOPIC_INBOUND_DELETE)).count());
+            assertEquals(1L, records.stream().filter(r -> r.topic().equals(TOPIC_INBOUND_ADD)).count());
+            assertEquals(1L, records.stream().filter(r -> r.topic().equals(TOPIC_CACHE)).count());
+        }
     }
 
     @Test
-    public void testProducerFailure() throws InterruptedException, ExecutionException {
+    public void testProducerFailure() throws Exception {
         when(mockProducer.send(any())).thenReturn(mockFuture);
         when(mockFuture.get()).thenThrow(new InterruptedException("Interrupted exception!"));
 
@@ -222,8 +224,9 @@ public class EventProducerTest {
         modified.add(rdf.createQuad(Trellis.PreferServerManaged, identifier, type, LDP.Container));
         modified.add(rdf.createQuad(Trellis.PreferAudit, bnode, type, AS.Delete));
 
-        final EventProducer event = new EventProducer(mockProducer, identifier, modified, true);
-        event.into(existing.stream());
-        assertFalse(event.emit());
+        try (final EventProducer event = new EventProducer(mockProducer, identifier, modified, true)) {
+            event.into(existing.stream());
+            assertFalse(event.emit());
+        }
     }
 }

@@ -14,6 +14,7 @@
 package org.trellisldp.rosid.common;
 
 import static java.time.Instant.now;
+import static java.util.Arrays.asList;
 import static java.util.Optional.empty;
 import static java.util.Optional.of;
 import static java.util.stream.Collectors.toList;
@@ -116,14 +117,29 @@ public class RDFUtilsTest {
     }
 
     @Test
-    public void testSerialize() {
+    public void testSerializeDataset() {
         final String data = "<info:foo> <ex:bar> \"A literal\"@en .\n<info:foo> <ex:baz> <info:trellis> .\n";
         final String dataInv = "<info:foo> <ex:baz> <info:trellis> .\n<info:foo> <ex:bar> \"A literal\"@en .\n";
         final String serialized = RDFUtils.serialize(RDFUtils.deserialize(data));
         assertTrue(serialized.equals(data) || serialized.equals(dataInv));
-        assertEquals("", RDFUtils.serialize(null));
+        assertEquals("", RDFUtils.serialize((Dataset) null));
 
         assertEquals(2L, RDFUtils.deserialize(data).size());
         assertEquals(0L, RDFUtils.deserialize(null).size());
+    }
+
+    @Test
+    public void testSerializeList() {
+        final String data = "<info:foo> <ex:bar> \"A literal\"@en <ex:Graph> .\n" +
+            "<info:foo> <ex:baz> <info:trellis> <ex:Graph> .\n";
+        final String dataInv = "<info:foo> <ex:baz> <info:trellis> <ex:Graph> .\n" +
+            "<info:foo> <ex:bar> \"A literal\"@en <ex:Graph> .\n";
+        final String serialized = RDFUtils.serialize(asList(
+                    rdf.createQuad(rdf.createIRI("ex:Graph"), rdf.createIRI("info:foo"),
+                        rdf.createIRI("ex:bar"), rdf.createLiteral("A literal", "en")),
+                    rdf.createQuad(rdf.createIRI("ex:Graph"), rdf.createIRI("info:foo"),
+                        rdf.createIRI("ex:baz"), rdf.createIRI("info:trellis"))));
+
+        assertTrue(serialized.equals(data) || serialized.equals(dataInv));
     }
 }
