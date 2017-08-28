@@ -101,17 +101,16 @@ public class EventProducerTest {
         modified.add(rdf.createQuad(Trellis.PreferServerManaged, identifier, type, LDP.Container));
 
         producer.clear();
-        try (final EventProducer event = new EventProducer(producer, identifier, modified, false)) {
-            event.into(existing.stream());
+        final EventProducer event = new EventProducer(producer, identifier, modified, false);
+        event.into(existing.stream());
 
-            assertTrue(event.emit());
-            assertEquals(4L, event.getRemoved().count());
-            assertEquals(5L, event.getAdded().count());
-            final List<ProducerRecord<String, String>> records = producer.history();
-            assertEquals(2L, records.size());
-            assertEquals(1L, records.stream().filter(r -> r.topic().equals(TOPIC_INBOUND_DELETE)).count());
-            assertEquals(1L, records.stream().filter(r -> r.topic().equals(TOPIC_INBOUND_ADD)).count());
-        }
+        assertTrue(event.emit());
+        assertEquals(4L, event.getRemoved().count());
+        assertEquals(5L, event.getAdded().count());
+        final List<ProducerRecord<String, String>> records = producer.history();
+        assertEquals(2L, records.size());
+        assertEquals(1L, records.stream().filter(r -> r.topic().equals(TOPIC_INBOUND_DELETE)).count());
+        assertEquals(1L, records.stream().filter(r -> r.topic().equals(TOPIC_INBOUND_ADD)).count());
     }
 
     @Test
@@ -139,19 +138,18 @@ public class EventProducerTest {
         modified.add(rdf.createQuad(Trellis.PreferAudit, rdf.createBlankNode(), type, AS.Create));
 
         producer.clear();
-        try (final EventProducer event = new EventProducer(producer, identifier, modified)) {
-            event.into(existing.stream());
+        final EventProducer event = new EventProducer(producer, identifier, modified);
+        event.into(existing.stream());
 
-            assertEquals(4L, event.getRemoved().count());
-            assertEquals(6L, event.getAdded().count());
-            assertTrue(event.emit());
-            final List<ProducerRecord<String, String>> records = producer.history();
-            assertEquals(4L, records.size());
-            assertEquals(1L, records.stream().filter(r -> r.topic().equals(TOPIC_LDP_CONTAINMENT_ADD)).count());
-            assertEquals(1L, records.stream().filter(r -> r.topic().equals(TOPIC_LDP_MEMBERSHIP_ADD)).count());
-            assertEquals(1L, records.stream().filter(r -> r.topic().equals(TOPIC_INBOUND_DELETE)).count());
-            assertEquals(1L, records.stream().filter(r -> r.topic().equals(TOPIC_INBOUND_ADD)).count());
-        }
+        assertEquals(4L, event.getRemoved().count());
+        assertEquals(6L, event.getAdded().count());
+        assertTrue(event.emit());
+        final List<ProducerRecord<String, String>> records = producer.history();
+        assertEquals(4L, records.size());
+        assertEquals(1L, records.stream().filter(r -> r.topic().equals(TOPIC_LDP_CONTAINMENT_ADD)).count());
+        assertEquals(1L, records.stream().filter(r -> r.topic().equals(TOPIC_LDP_MEMBERSHIP_ADD)).count());
+        assertEquals(1L, records.stream().filter(r -> r.topic().equals(TOPIC_INBOUND_DELETE)).count());
+        assertEquals(1L, records.stream().filter(r -> r.topic().equals(TOPIC_INBOUND_ADD)).count());
     }
 
     @Test
@@ -180,20 +178,19 @@ public class EventProducerTest {
         modified.add(rdf.createQuad(Trellis.PreferAudit, bnode, type, AS.Delete));
 
         producer.clear();
-        try (final EventProducer event = new EventProducer(producer, identifier, modified, true)) {
-            event.into(existing.stream());
+        final EventProducer event = new EventProducer(producer, identifier, modified, true);
+        event.into(existing.stream());
 
-            assertEquals(4L, event.getRemoved().count());
-            assertEquals(6L, event.getAdded().count());
-            assertTrue(event.emit());
-            final List<ProducerRecord<String, String>> records = producer.history();
-            assertEquals(5L, records.size());
-            assertEquals(1L, records.stream().filter(r -> r.topic().equals(TOPIC_LDP_CONTAINMENT_DELETE)).count());
-            assertEquals(1L, records.stream().filter(r -> r.topic().equals(TOPIC_LDP_MEMBERSHIP_DELETE)).count());
-            assertEquals(1L, records.stream().filter(r -> r.topic().equals(TOPIC_INBOUND_DELETE)).count());
-            assertEquals(1L, records.stream().filter(r -> r.topic().equals(TOPIC_INBOUND_ADD)).count());
-            assertEquals(1L, records.stream().filter(r -> r.topic().equals(TOPIC_CACHE)).count());
-        }
+        assertEquals(4L, event.getRemoved().count());
+        assertEquals(6L, event.getAdded().count());
+        assertTrue(event.emit());
+        final List<ProducerRecord<String, String>> records = producer.history();
+        assertEquals(5L, records.size());
+        assertEquals(1L, records.stream().filter(r -> r.topic().equals(TOPIC_LDP_CONTAINMENT_DELETE)).count());
+        assertEquals(1L, records.stream().filter(r -> r.topic().equals(TOPIC_LDP_MEMBERSHIP_DELETE)).count());
+        assertEquals(1L, records.stream().filter(r -> r.topic().equals(TOPIC_INBOUND_DELETE)).count());
+        assertEquals(1L, records.stream().filter(r -> r.topic().equals(TOPIC_INBOUND_ADD)).count());
+        assertEquals(1L, records.stream().filter(r -> r.topic().equals(TOPIC_CACHE)).count());
     }
 
     @Test
@@ -224,9 +221,8 @@ public class EventProducerTest {
         modified.add(rdf.createQuad(Trellis.PreferServerManaged, identifier, type, LDP.Container));
         modified.add(rdf.createQuad(Trellis.PreferAudit, bnode, type, AS.Delete));
 
-        try (final EventProducer event = new EventProducer(mockProducer, identifier, modified, true)) {
-            event.into(existing.stream());
-            assertFalse(event.emit());
-        }
+        final EventProducer event = new EventProducer(mockProducer, identifier, modified, true);
+        event.into(existing.stream());
+        assertFalse(event.emit());
     }
 }

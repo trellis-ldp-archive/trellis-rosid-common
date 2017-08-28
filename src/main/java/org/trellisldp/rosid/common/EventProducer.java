@@ -41,7 +41,9 @@ import static org.trellisldp.vocabulary.Trellis.PreferServerManaged;
 import static org.trellisldp.vocabulary.Trellis.PreferUserManaged;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.stream.Stream;
@@ -58,13 +60,13 @@ import org.slf4j.Logger;
 /**
  * @author acoburn
  */
-class EventProducer implements AutoCloseable {
+class EventProducer {
 
     private static final Logger LOGGER = getLogger(EventProducer.class);
 
     private static final RDF rdf = getInstance();
 
-    private final Dataset existing = rdf.createDataset();
+    private final Set<Quad> existing = new HashSet<>();
 
     private final Producer<String, String> producer;
 
@@ -97,11 +99,6 @@ class EventProducer implements AutoCloseable {
      */
     public EventProducer(final Producer<String, String> producer, final IRI identifier, final Dataset dataset) {
         this(producer, identifier, dataset, false);
-    }
-
-    @Override
-    public void close() throws Exception {
-        existing.close();
     }
 
     /**

@@ -15,6 +15,7 @@ package org.trellisldp.rosid.common;
 
 import static java.util.Objects.nonNull;
 import static java.util.Optional.of;
+import static java.util.stream.Collectors.toList;
 import static org.apache.jena.riot.Lang.NQUADS;
 import static org.apache.jena.riot.RDFDataMgr.write;
 import static org.apache.jena.sparql.core.DatasetGraphFactory.create;
@@ -26,7 +27,6 @@ import static org.trellisldp.vocabulary.XSD.dateTime;
 
 import java.io.IOException;
 import java.io.StringWriter;
-import java.io.UncheckedIOException;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -128,7 +128,7 @@ public final class RDFUtils {
             write(str, datasetGraph, NQUADS);
             datasetGraph.close();
             return str.toString();
-        } catch (final Exception ex) {
+        } catch (final IOException ex) {
             LOGGER.error("Error processing dataset in quad serializer: ", ex.getMessage());
             throw new RuntimeRepositoryException("Error processing dataset", ex);
         }
@@ -141,16 +141,7 @@ public final class RDFUtils {
      */
     public static String serialize(final Dataset dataset) {
         if (nonNull(dataset)) {
-            try (final StringWriter str = new StringWriter()) {
-                final DatasetGraph datasetGraph = create();
-                dataset.stream().map(rdf::asJenaQuad).forEach(datasetGraph::add);
-                write(str, datasetGraph, NQUADS);
-                datasetGraph.close();
-                return str.toString();
-            } catch (final IOException ex) {
-                LOGGER.error("Error serializing dataset: {}", ex.getMessage());
-                throw new UncheckedIOException(ex);
-            }
+            return serialize(dataset.stream().collect(toList()));
         }
         return "";
     }
