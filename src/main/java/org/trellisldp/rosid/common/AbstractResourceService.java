@@ -147,17 +147,21 @@ public abstract class AbstractResourceService extends LockableResourceService {
             return false;
         }
 
-        final EventProducer eventProducer = new EventProducer(producer, identifier, dataset, async);
-        resource.map(Resource::stream).ifPresent(eventProducer::into);
+        try (final EventProducer eventProducer = new EventProducer(producer, identifier, dataset, async)) {
+            resource.map(Resource::stream).ifPresent(eventProducer::into);
 
-        final Instant later = now();
-        if (!write(identifier, eventProducer.getRemoved(),
-                    concat(eventProducer.getAdded(), endedAtQuad(identifier, dataset, later)), later)) {
-            LOGGER.error("Could not write data to persistence layer!");
+            final Instant later = now();
+            if (!write(identifier, eventProducer.getRemoved(),
+                        concat(eventProducer.getAdded(), endedAtQuad(identifier, dataset, later)), later)) {
+                LOGGER.error("Could not write data to persistence layer!");
+                return false;
+            }
+
+            return eventProducer.emit();
+        } catch (final Exception ex) {
+            LOGGER.error("Error processing dataset: {}", ex.getMessage());
             return false;
         }
-
-        return eventProducer.emit();
     }
 
     @Override
