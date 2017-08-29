@@ -16,6 +16,7 @@ package org.trellisldp.rosid.common;
 import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
 import static java.util.Optional.of;
+import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toList;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -29,6 +30,7 @@ import org.apache.commons.rdf.api.Dataset;
 import org.apache.commons.rdf.api.IRI;
 import org.apache.commons.rdf.api.Literal;
 import org.apache.commons.rdf.api.Triple;
+import org.trellisldp.vocabulary.ACL;
 import org.trellisldp.vocabulary.DC;
 import org.trellisldp.vocabulary.LDP;
 import org.trellisldp.vocabulary.OA;
@@ -129,6 +131,7 @@ public class ResourceData {
     private Instant modified;
     private String annotationService;
     private String inbox;
+    private Boolean hasAcl = false;
 
     /**
      * The JSON-LD context of the resource data
@@ -200,6 +203,22 @@ public class ResourceData {
     @JsonProperty("type")
     public void setUserTypes(final List<String> userTypes) {
         this.userTypes = userTypes;
+    }
+
+    /**
+     * A marker for whether this resource contains its own ACL resource
+     * @return true if the resource has its own ACL resource; false otherwise
+     */
+    public Boolean getHasAcl() {
+        return hasAcl;
+    }
+
+    /**
+     * Set a marker for whether the resource has its own ACL resource
+     * @param hasAcl true if the resource has its own ACL resource; false otherwise
+     */
+    public void setHasAcl(final Boolean hasAcl) {
+        this.hasAcl = ofNullable(hasAcl).orElse(false);
     }
 
     /**
@@ -348,6 +367,9 @@ public class ResourceData {
 
         final ResourceData rd = new ResourceData();
         rd.setId(identifier.getIRIString());
+
+        rd.setHasAcl(dataset.stream(of(Trellis.PreferAccessControl), null, RDF.type, ACL.Authorization)
+                .findAny().isPresent());
 
         dataset.getGraph(Trellis.PreferServerManaged).ifPresent(graph -> {
             graph.stream(identifier, DC.modified, null).findFirst().map(objectLiteralAsString).map(Instant::parse)

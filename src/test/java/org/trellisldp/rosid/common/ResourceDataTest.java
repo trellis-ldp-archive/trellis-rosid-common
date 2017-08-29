@@ -17,6 +17,7 @@ import static org.trellisldp.vocabulary.RDF.type;
 import static java.time.Instant.now;
 import static com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -27,6 +28,7 @@ import java.util.Optional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import org.trellisldp.vocabulary.ACL;
 import org.trellisldp.vocabulary.DC;
 import org.trellisldp.vocabulary.LDP;
 import org.trellisldp.vocabulary.OA;
@@ -112,10 +114,10 @@ public class ResourceDataTest {
         dataset.add(rdf.createQuad(Trellis.PreferServerManaged, binary, DC.format, format));
         dataset.add(rdf.createQuad(Trellis.PreferServerManaged, binary, DC.extent, extent));
 
-
         final Optional<ResourceData> rd = ResourceData.from(identifier, dataset);
         assertTrue(rd.isPresent());
         rd.ifPresent(data -> {
+            assertFalse(data.getHasAcl());
             assertEquals(identifier.getIRIString(), data.getId());
             assertEquals(inbox.getIRIString(), data.getInbox());
             assertEquals(LDP.NonRDFSource.getIRIString(), data.getLdpType());
@@ -144,10 +146,12 @@ public class ResourceDataTest {
         dataset.add(rdf.createQuad(Trellis.PreferUserManaged, identifier, LDP.hasMemberRelation, DC.title));
         dataset.add(rdf.createQuad(Trellis.PreferUserManaged, identifier, LDP.membershipResource, other));
         dataset.add(rdf.createQuad(Trellis.PreferUserManaged, identifier, LDP.isMemberOfRelation, diff));
+        dataset.add(rdf.createQuad(Trellis.PreferAccessControl, rdf.createBlankNode(), type, ACL.Authorization));
 
         final Optional<ResourceData> rd = ResourceData.from(identifier, dataset);
         assertTrue(rd.isPresent());
         rd.ifPresent(data -> {
+            assertTrue(data.getHasAcl());
             assertEquals(identifier.getIRIString(), data.getId());
             assertEquals(RDFS.label.getIRIString(), data.getInsertedContentRelation());
             assertEquals(DC.title.getIRIString(), data.getHasMemberRelation());
