@@ -16,7 +16,6 @@ package org.trellisldp.rosid.common;
 import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
 import static java.util.Optional.of;
-import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toList;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -131,7 +130,7 @@ public class ResourceData {
     private Instant modified;
     private String annotationService;
     private String inbox;
-    private Boolean hasAcl = false;
+    private Boolean hasAcl;
 
     /**
      * The JSON-LD context of the resource data
@@ -218,7 +217,7 @@ public class ResourceData {
      * @param hasAcl true if the resource has its own ACL resource; false otherwise
      */
     public void setHasAcl(final Boolean hasAcl) {
-        this.hasAcl = ofNullable(hasAcl).orElse(false);
+        this.hasAcl = hasAcl;
     }
 
     /**
