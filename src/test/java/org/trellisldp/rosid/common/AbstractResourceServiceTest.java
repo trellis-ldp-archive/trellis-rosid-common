@@ -176,7 +176,7 @@ public class AbstractResourceServiceTest {
         assertFalse(svc.skolemize(rdf.createLiteral("Test2")) instanceof IRI);
         assertEquals(of(resource), svc.getContainer(child));
         assertEquals(of(root), svc.getContainer(resource));
-        assertEquals(empty(), svc.getContainer(root));
+        assertFalse(svc.getContainer(root).isPresent());
 
         assertEquals(mockIdSupplier, svc.getIdentifierSupplier());
     }

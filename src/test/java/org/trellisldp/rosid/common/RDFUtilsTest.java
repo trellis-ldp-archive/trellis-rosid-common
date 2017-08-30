@@ -15,10 +15,10 @@ package org.trellisldp.rosid.common;
 
 import static java.time.Instant.now;
 import static java.util.Arrays.asList;
-import static java.util.Optional.empty;
 import static java.util.Optional.of;
 import static java.util.stream.Collectors.toList;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.trellisldp.rosid.common.RDFUtils.endedAtQuad;
 import static org.trellisldp.rosid.common.RDFUtils.getParent;
@@ -99,7 +99,7 @@ public class RDFUtilsTest {
     @Test
     public void testGetParent() {
         assertEquals(of("trellis:repository"), getParent("trellis:repository/resource"));
-        assertEquals(empty(), getParent("trellis:repository"));
+        assertFalse(getParent("trellis:repository").isPresent());
         assertEquals(of("trellis:repository/resource"), getParent("trellis:repository/resource/child"));
     }
 

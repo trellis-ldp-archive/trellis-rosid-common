@@ -14,7 +14,6 @@
 package org.trellisldp.rosid.common;
 
 import static java.time.Instant.now;
-import static java.util.Optional.empty;
 import static java.util.Optional.of;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -84,7 +83,7 @@ public class NotificationTest {
 
         final Notification event = new Notification(identifier, dataset);
         assertEquals(of(resource), event.getTarget());
-        assertEquals(empty(), event.getInbox());
+        assertFalse(event.getInbox().isPresent());
         assertTrue(event.getAgents().isEmpty());
         assertTrue(event.getTargetTypes().isEmpty());
         assertTrue(event.getTypes().isEmpty());
