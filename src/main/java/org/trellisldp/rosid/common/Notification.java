@@ -14,7 +14,6 @@
 package org.trellisldp.rosid.common;
 
 import static java.time.Instant.now;
-import static java.util.Collections.emptyList;
 import static java.util.Optional.of;
 import static java.util.UUID.randomUUID;
 import static java.util.stream.Collectors.toList;
@@ -23,6 +22,7 @@ import static org.trellisldp.vocabulary.RDF.type;
 
 import java.time.Instant;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
@@ -72,7 +72,7 @@ public class Notification implements Event {
         return data.getGraph(Trellis.PreferAudit)
             .map(graph -> graph.stream(null, PROV.wasAssociatedWith, null).map(Triple::getObject)
                     .filter(term -> term instanceof IRI).map(term -> (IRI) term).collect(toList()))
-            .orElse(emptyList());
+            .orElseGet(Collections::emptyList);
     }
 
     @Override
@@ -85,7 +85,7 @@ public class Notification implements Event {
         return data.getGraph(Trellis.PreferAudit)
             .map(graph -> graph.stream(null, type, null).map(Triple::getObject)
                     .filter(term -> term instanceof IRI).map(term -> (IRI) term).collect(toList()))
-            .orElse(emptyList());
+            .orElseGet(Collections::emptyList);
     }
 
     @Override
