@@ -45,6 +45,7 @@ import org.apache.commons.rdf.api.BlankNode;
 import org.apache.commons.rdf.api.Dataset;
 import org.apache.commons.rdf.api.IRI;
 import org.apache.commons.rdf.api.Quad;
+import org.apache.commons.rdf.api.Triple;
 import org.apache.commons.rdf.api.RDF;
 import org.apache.commons.rdf.jena.JenaRDF;
 import org.apache.curator.framework.CuratorFramework;
@@ -144,6 +145,26 @@ public class AbstractResourceServiceTest {
                 return lock;
             }
             return super.getLock(identifier);
+        }
+
+        @Override
+        public Boolean compact(final IRI identifier) {
+            throw new UnsupportedOperationException("compact is not implemented");
+        }
+
+        @Override
+        public Boolean purge(final IRI identifier) {
+            throw new UnsupportedOperationException("purge is not implemented");
+        }
+
+        @Override
+        public Stream<Triple> list(final IRI identifier) {
+            throw new UnsupportedOperationException("list is not implemented");
+        }
+
+        @Override
+        public Stream<Quad> export(final IRI identifier) {
+            throw new UnsupportedOperationException("export is not implemented");
         }
     }
 

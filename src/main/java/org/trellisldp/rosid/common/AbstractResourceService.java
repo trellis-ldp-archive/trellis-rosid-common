@@ -19,7 +19,6 @@ import static java.util.Objects.requireNonNull;
 import static java.util.Optional.of;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.stream.Stream.concat;
-import static java.util.stream.Stream.empty;
 import static org.slf4j.LoggerFactory.getLogger;
 import static org.trellisldp.rosid.common.RDFUtils.endedAtQuad;
 import static org.trellisldp.rosid.common.RDFUtils.getParent;
@@ -40,7 +39,6 @@ import org.apache.commons.rdf.api.Dataset;
 import org.apache.commons.rdf.api.IRI;
 import org.apache.commons.rdf.api.Quad;
 import org.apache.commons.rdf.api.RDFTerm;
-import org.apache.commons.rdf.api.Triple;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.locks.InterProcessLock;
 import org.apache.kafka.clients.producer.Producer;
@@ -182,30 +180,6 @@ public abstract class AbstractResourceService extends LockableResourceService {
             }
         }
         return term;
-    }
-
-    @Override
-    public Boolean compact(final IRI identifier) {
-        // TODO -- implement this
-        return false;
-    }
-
-    @Override
-    public Boolean purge(final IRI identifier) {
-        // TODO -- implement this
-        return false;
-    }
-
-    @Override
-    public Stream<Triple> list(final IRI identifier) {
-        // TODO -- implement this
-        return empty();
-    }
-
-    @Override
-    public Stream<Quad> export(final IRI identifier) {
-        // TODO -- implement this
-        return empty();
     }
 
     @Override
