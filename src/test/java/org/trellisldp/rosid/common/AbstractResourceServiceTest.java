@@ -13,17 +13,20 @@
  */
 package org.trellisldp.rosid.common;
 
+import static java.util.Arrays.asList;
 import static java.util.Collections.singletonMap;
 import static java.util.Objects.nonNull;
 import static java.util.Optional.empty;
 import static java.util.Optional.of;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.stream.Collectors.toList;
 import static org.apache.commons.codec.digest.DigestUtils.md5Hex;
 import static org.apache.curator.framework.CuratorFrameworkFactory.newClient;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
@@ -35,6 +38,7 @@ import org.trellisldp.api.Resource;
 import org.trellisldp.spi.ResourceService;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
@@ -66,6 +70,7 @@ import org.trellisldp.spi.RuntimeRepositoryException;
 import org.trellisldp.spi.EventService;
 import org.trellisldp.vocabulary.AS;
 import org.trellisldp.vocabulary.DC;
+import org.trellisldp.vocabulary.LDP;
 import org.trellisldp.vocabulary.Trellis;
 
 /**
@@ -159,7 +164,7 @@ public class AbstractResourceServiceTest {
 
         @Override
         public Stream<Triple> list(final IRI identifier) {
-            throw new UnsupportedOperationException("list is not implemented");
+            return asList(rdf.createTriple(identifier, type, LDP.Container)).stream();
         }
     }
 
@@ -283,5 +288,20 @@ public class AbstractResourceServiceTest {
         assertTrue(svc.put(resource, dataset));
         assertTrue(svc.put(existing, dataset));
         verify(mockEventService, times(2)).emit(any(Notification.class));
+    }
+
+    @Test
+    public void testExport() {
+        when(mockResource.getIdentifier()).thenReturn(existing);
+        when(mockResource.stream(eq(Trellis.PreferUserManaged))).thenAnswer(inv ->
+                Stream.of(rdf.createTriple(existing, DC.title, rdf.createLiteral("A title"))));
+        final ResourceService svc = new MyResourceService(curator.getConnectString(), null, null);
+
+        final List<Quad> export = svc.export(existing).collect(toList());
+        assertEquals(1L, export.size());
+        assertEquals(of(existing), export.get(0).getGraphName());
+        assertEquals(existing, export.get(0).getSubject());
+        assertEquals(DC.title, export.get(0).getPredicate());
+        assertEquals(rdf.createLiteral("A title"), export.get(0).getObject());
     }
 }

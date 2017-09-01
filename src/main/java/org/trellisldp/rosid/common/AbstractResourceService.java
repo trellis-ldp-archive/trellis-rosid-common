@@ -187,15 +187,10 @@ public abstract class AbstractResourceService extends LockableResourceService {
 
     @Override
     public Stream<Quad> export(final IRI identifier) {
-        return list(identifier).map(Triple::getSubject).flatMap(id -> {
-                // TODO - JDK9 optional to stream
-                @SuppressWarnings("unchecked")
-                final Optional<Resource> res = get((IRI) id);
-                if (res.isPresent()) {
-                    return Stream.of(res.get());
-                }
-                return empty();
-            }).flatMap(resource -> resource.stream(PreferUserManaged).map(q ->
+        return list(identifier).map(Triple::getSubject).map(x -> (IRI) x)
+            // TODO - JDK9 optional to stream
+            .flatMap(id -> get(id).map(Stream::of).orElseGet(Stream::empty))
+            .flatMap(resource -> resource.stream(PreferUserManaged).map(q ->
                         rdf.createQuad(resource.getIdentifier(), q.getSubject(), q.getPredicate(), q.getObject())));
     }
 
