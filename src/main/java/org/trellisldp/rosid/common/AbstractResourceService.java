@@ -19,6 +19,7 @@ import static java.util.Objects.requireNonNull;
 import static java.util.Optional.of;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.stream.Stream.concat;
+import static java.util.stream.Stream.empty;
 import static org.slf4j.LoggerFactory.getLogger;
 import static org.trellisldp.rosid.common.RDFUtils.endedAtQuad;
 import static org.trellisldp.rosid.common.RDFUtils.getParent;
@@ -27,6 +28,7 @@ import static org.trellisldp.vocabulary.AS.Create;
 import static org.trellisldp.vocabulary.AS.Delete;
 import static org.trellisldp.vocabulary.RDF.type;
 import static org.trellisldp.vocabulary.Trellis.PreferAudit;
+import static org.trellisldp.vocabulary.Trellis.PreferUserManaged;
 
 import java.time.Instant;
 import java.util.Map;
@@ -39,6 +41,7 @@ import org.apache.commons.rdf.api.Dataset;
 import org.apache.commons.rdf.api.IRI;
 import org.apache.commons.rdf.api.Quad;
 import org.apache.commons.rdf.api.RDFTerm;
+import org.apache.commons.rdf.api.Triple;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.locks.InterProcessLock;
 import org.apache.kafka.clients.producer.Producer;
@@ -180,6 +183,20 @@ public abstract class AbstractResourceService extends LockableResourceService {
             }
         }
         return term;
+    }
+
+    @Override
+    public Stream<Quad> export(final IRI identifier) {
+        return list(identifier).map(Triple::getSubject).flatMap(id -> {
+                // TODO - JDK9 optional to stream
+                @SuppressWarnings("unchecked")
+                final Optional<Resource> res = get((IRI) id);
+                if (res.isPresent()) {
+                    return Stream.of(res.get());
+                }
+                return empty();
+            }).flatMap(resource -> resource.stream(PreferUserManaged).map(q ->
+                        rdf.createQuad(resource.getIdentifier(), q.getSubject(), q.getPredicate(), q.getObject())));
     }
 
     @Override

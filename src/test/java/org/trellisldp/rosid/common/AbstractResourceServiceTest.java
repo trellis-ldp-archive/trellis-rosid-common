@@ -161,11 +161,6 @@ public class AbstractResourceServiceTest {
         public Stream<Triple> list(final IRI identifier) {
             throw new UnsupportedOperationException("list is not implemented");
         }
-
-        @Override
-        public Stream<Quad> export(final IRI identifier) {
-            throw new UnsupportedOperationException("export is not implemented");
-        }
     }
 
     private static CuratorFramework getZkClient(final String connectString) {
