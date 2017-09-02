@@ -38,9 +38,11 @@ import org.trellisldp.api.Resource;
 import org.trellisldp.spi.ResourceService;
 
 import java.time.Instant;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
@@ -292,8 +294,13 @@ public class AbstractResourceServiceTest {
 
     @Test
     public void testExport() {
+        final Set<IRI> graphs = new HashSet<>();
+        graphs.add(Trellis.PreferAccessControl);
+        graphs.add(Trellis.PreferAudit);
+        graphs.add(Trellis.PreferServerManaged);
+        graphs.add(Trellis.PreferUserManaged);
         when(mockResource.getIdentifier()).thenReturn(existing);
-        when(mockResource.stream(eq(Trellis.PreferUserManaged))).thenAnswer(inv ->
+        when(mockResource.stream(eq(graphs))).thenAnswer(inv ->
                 Stream.of(rdf.createTriple(existing, DC.title, rdf.createLiteral("A title"))));
         final ResourceService svc = new MyResourceService(curator.getConnectString(), null, null);
 

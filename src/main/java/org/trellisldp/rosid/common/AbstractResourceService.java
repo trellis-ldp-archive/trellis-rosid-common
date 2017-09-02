@@ -27,12 +27,16 @@ import static org.trellisldp.spi.RDFUtils.toExternalTerm;
 import static org.trellisldp.vocabulary.AS.Create;
 import static org.trellisldp.vocabulary.AS.Delete;
 import static org.trellisldp.vocabulary.RDF.type;
+import static org.trellisldp.vocabulary.Trellis.PreferAccessControl;
 import static org.trellisldp.vocabulary.Trellis.PreferAudit;
+import static org.trellisldp.vocabulary.Trellis.PreferServerManaged;
 import static org.trellisldp.vocabulary.Trellis.PreferUserManaged;
 
 import java.time.Instant;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -187,10 +191,15 @@ public abstract class AbstractResourceService extends LockableResourceService {
 
     @Override
     public Stream<Quad> export(final IRI identifier) {
+        final Set<IRI> graphs = new HashSet<>();
+        graphs.add(PreferUserManaged);
+        graphs.add(PreferServerManaged);
+        graphs.add(PreferAccessControl);
+        graphs.add(PreferAudit);
         return list(identifier).map(Triple::getSubject).map(x -> (IRI) x)
             // TODO - JDK9 optional to stream
             .flatMap(id -> get(id).map(Stream::of).orElseGet(Stream::empty))
-            .flatMap(resource -> resource.stream(PreferUserManaged).map(q ->
+            .flatMap(resource -> resource.stream(graphs).map(q ->
                         rdf.createQuad(resource.getIdentifier(), q.getSubject(), q.getPredicate(), q.getObject())));
     }
 
