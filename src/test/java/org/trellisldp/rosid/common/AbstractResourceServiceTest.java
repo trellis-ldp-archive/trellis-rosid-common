@@ -124,6 +124,11 @@ public class AbstractResourceServiceTest {
             this.lock = lock;
         }
 
+        public MyResourceService(final Map<String, String> partitions, final String connectString) {
+            super(partitions, new MockProducer<>(true, new StringSerializer(), new StringSerializer()),
+                    getZkClient(connectString), null, null, false);
+        }
+
         @Override
         public Optional<Resource> get(final IRI identifier) {
             if (identifier.equals(existing)) {
@@ -291,6 +296,11 @@ public class AbstractResourceServiceTest {
         assertTrue(svc.put(resource, dataset));
         assertTrue(svc.put(existing, dataset));
         verify(mockEventService, times(2)).emit(any(Notification.class));
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testInvalidPartition() {
+        new MyResourceService(singletonMap("bnode", "path/to/res"), curator.getConnectString());
     }
 
     @Test

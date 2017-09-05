@@ -85,6 +85,10 @@ public abstract class AbstractResourceService extends LockableResourceService {
         this.notifications = notifications;
         this.async = async;
         this.idSupplier = idSupplier;
+
+        if (partitions.containsKey("bnode")) {
+            throw new IllegalArgumentException("Invalid partition name: bnode");
+        }
     }
 
     /**
