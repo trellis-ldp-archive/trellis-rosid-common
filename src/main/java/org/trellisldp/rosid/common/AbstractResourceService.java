@@ -23,6 +23,7 @@ import static java.util.stream.Stream.empty;
 import static org.slf4j.LoggerFactory.getLogger;
 import static org.trellisldp.rosid.common.RDFUtils.endedAtQuad;
 import static org.trellisldp.rosid.common.RDFUtils.getParent;
+import static org.trellisldp.spi.RDFUtils.TRELLIS_BNODE_PREFIX;
 import static org.trellisldp.spi.RDFUtils.toExternalTerm;
 import static org.trellisldp.vocabulary.AS.Create;
 import static org.trellisldp.vocabulary.AS.Delete;
@@ -55,8 +56,6 @@ import org.trellisldp.spi.EventService;
 public abstract class AbstractResourceService extends LockableResourceService {
 
     private static final Logger LOGGER = getLogger(AbstractResourceService.class);
-
-    protected static final String SKOLEM_BNODE_PREFIX = "trellis:bnode/";
 
     private final Supplier<String> idSupplier;
 
@@ -169,7 +168,7 @@ public abstract class AbstractResourceService extends LockableResourceService {
     @Override
     public RDFTerm skolemize(final RDFTerm term) {
         if (term instanceof BlankNode) {
-            return rdf.createIRI(SKOLEM_BNODE_PREFIX + ((BlankNode) term).uniqueReference());
+            return rdf.createIRI(TRELLIS_BNODE_PREFIX + ((BlankNode) term).uniqueReference());
         }
         return term;
     }
@@ -178,8 +177,8 @@ public abstract class AbstractResourceService extends LockableResourceService {
     public RDFTerm unskolemize(final RDFTerm term) {
         if (term instanceof IRI) {
             final String iri = ((IRI) term).getIRIString();
-            if (iri.startsWith(SKOLEM_BNODE_PREFIX)) {
-                return rdf.createBlankNode(iri.substring(SKOLEM_BNODE_PREFIX.length()));
+            if (iri.startsWith(TRELLIS_BNODE_PREFIX)) {
+                return rdf.createBlankNode(iri.substring(TRELLIS_BNODE_PREFIX.length()));
             }
         }
         return term;
