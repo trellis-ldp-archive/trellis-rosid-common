@@ -14,6 +14,8 @@
 package org.trellisldp.rosid.common;
 
 import static java.time.Instant.now;
+import static java.util.Arrays.asList;
+import static java.util.Collections.unmodifiableList;
 import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
 import static java.util.Optional.of;
@@ -32,6 +34,7 @@ import static org.trellisldp.vocabulary.Trellis.PreferAudit;
 
 import java.time.Instant;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
@@ -57,6 +60,8 @@ public abstract class AbstractResourceService extends LockableResourceService {
 
     private static final Logger LOGGER = getLogger(AbstractResourceService.class);
 
+    public static final List<String> RESERVED_PARTITION_NAMES = unmodifiableList(asList("bnode", "admin"));
+
     private final Supplier<String> idSupplier;
 
     protected final Boolean async;
@@ -81,14 +86,14 @@ public abstract class AbstractResourceService extends LockableResourceService {
 
         requireNonNull(partitions, "partition configuration may not be null!");
 
+        RESERVED_PARTITION_NAMES.stream().filter(partitions::containsKey).findAny().ifPresent(name -> {
+            throw new IllegalArgumentException("Invalid partition name: " + name);
+        });
+
         this.partitions = partitions;
         this.notifications = notifications;
         this.async = async;
         this.idSupplier = idSupplier;
-
-        if (partitions.containsKey("bnode")) {
-            throw new IllegalArgumentException("Invalid partition name: bnode");
-        }
     }
 
     /**
