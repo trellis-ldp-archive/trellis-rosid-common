@@ -165,8 +165,9 @@ public class AbstractResourceServiceTest {
         }
 
         @Override
-        public Stream<Triple> list(final IRI identifier) {
-            return asList(rdf.createTriple(identifier, type, LDP.Container)).stream();
+        public Stream<Triple> list(final String partition) {
+            return asList(rdf.createTriple(rdf.createIRI("trellis:" + partition + "/existing"), type, LDP.Container))
+                .stream();
         }
     }
 
@@ -304,7 +305,8 @@ public class AbstractResourceServiceTest {
                 Stream.of(rdf.createTriple(existing, DC.title, rdf.createLiteral("A title"))));
         final ResourceService svc = new MyResourceService(curator.getConnectString(), null, null);
 
-        final List<Quad> export = svc.export(existing).collect(toList());
+        final String partition = "repository";
+        final List<Quad> export = svc.export(partition, graphs).collect(toList());
         assertEquals(1L, export.size());
         assertEquals(of(existing), export.get(0).getGraphName());
         assertEquals(existing, export.get(0).getSubject());
