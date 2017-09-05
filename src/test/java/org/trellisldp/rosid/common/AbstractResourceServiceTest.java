@@ -160,12 +160,12 @@ public class AbstractResourceServiceTest {
         }
 
         @Override
-        public Boolean compact(final IRI identifier) {
+        public Stream<IRI> compact(final IRI identifier) {
             throw new UnsupportedOperationException("compact is not implemented");
         }
 
         @Override
-        public Boolean purge(final IRI identifier) {
+        public Stream<IRI> purge(final IRI identifier) {
             throw new UnsupportedOperationException("purge is not implemented");
         }
 
