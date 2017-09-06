@@ -165,8 +165,8 @@ public class AbstractResourceServiceTest {
         }
 
         @Override
-        public Stream<IRI> purge(final IRI identifier) {
-            throw new UnsupportedOperationException("purge is not implemented");
+        public Stream<IRI> tryPurge(final IRI identifier) {
+            return Stream.of(rdf.createIRI("file:partition/file.jpg"));
         }
 
         @Override
@@ -298,6 +298,31 @@ public class AbstractResourceServiceTest {
         verify(mockEventService, times(2)).emit(any(Notification.class));
     }
 
+    @Test(expected = RuntimeRepositoryException.class)
+    public void testFailedLock4() throws Exception {
+        doThrow(new Exception("Error")).when(mockLock).release();
+        when(mockLock.acquire(any(Long.class), any(TimeUnit.class))).thenReturn(true);
+        when(mockLock.isAcquiredInThisProcess()).thenReturn(true);
+
+        final ResourceService svc = new MyResourceService(curator.getConnectString(), mockEventService, mockLock);
+        svc.purge(resource);
+    }
+
+    @Test(expected = RuntimeRepositoryException.class)
+    public void testFailedLock5() throws Exception {
+        doThrow(new Exception("Error")).when(mockLock).acquire(any(Long.class), any(TimeUnit.class));
+
+        final ResourceService svc = new MyResourceService(curator.getConnectString(), mockEventService, mockLock);
+        svc.purge(resource);
+    }
+
+    @Test(expected = RuntimeRepositoryException.class)
+    public void testFailedLock6() throws Exception {
+        final ResourceService svc = new MyResourceService(curator.getConnectString(), mockEventService, mockLock);
+        svc.purge(resource);
+    }
+
+
     @Test(expected = IllegalArgumentException.class)
     public void testInvalidPartition() {
         new MyResourceService(singletonMap("bnode", "path/to/res"), curator.getConnectString());
@@ -322,5 +347,13 @@ public class AbstractResourceServiceTest {
         assertEquals(existing, export.get(0).getSubject());
         assertEquals(DC.title, export.get(0).getPredicate());
         assertEquals(rdf.createLiteral("A title"), export.get(0).getObject());
+    }
+
+    @Test
+    public void testPurge() {
+        final ResourceService svc = new MyResourceService(curator.getConnectString(), null, null);
+        final List<IRI> binaries = svc.purge(existing).collect(toList());
+        assertEquals(1L, binaries.size());
+        assertEquals("file:partition/file.jpg", binaries.get(0).getIRIString());
     }
 }
