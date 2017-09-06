@@ -209,10 +209,9 @@ public abstract class AbstractResourceService implements ResourceService {
      * @return true if the operation was successful; false otherwise
      */
     private Boolean tryWrite(final IRI identifier, final Dataset dataset) {
-        final Instant time = now();
         final Boolean isCreate = dataset.contains(of(PreferAudit), null, type, Create);
         final Boolean isDelete = dataset.contains(of(PreferAudit), null, type, Delete);
-        final Optional<Resource> resource = get(identifier, time);
+        final Optional<Resource> resource = get(identifier, MAX);
 
         if (resource.isPresent() && isCreate) {
             LOGGER.warn("The resource already exists and cannot be created: {}", identifier.getIRIString());
@@ -223,7 +222,9 @@ public abstract class AbstractResourceService implements ResourceService {
         }
 
         final EventProducer eventProducer = new EventProducer(producer, identifier, dataset, async);
-        resource.map(Resource::stream).ifPresent(eventProducer::into);
+        try (final Stream<Quad> stream = resource.map(Resource::stream).orElseGet(Stream::empty)) {
+            eventProducer.into(stream);
+        }
 
         final Instant later = now();
         if (!write(identifier, eventProducer.getRemoved(),
