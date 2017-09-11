@@ -24,9 +24,6 @@ import static org.trellisldp.rosid.common.RDFUtils.endedAtQuad;
 import static org.trellisldp.rosid.common.RDFUtils.getParent;
 import static org.trellisldp.rosid.common.RDFUtils.hasObjectIRI;
 import static org.trellisldp.rosid.common.RDFUtils.hasSubjectIRI;
-import static org.trellisldp.rosid.common.RDFUtils.inDomain;
-import static org.trellisldp.rosid.common.RDFUtils.objectIsSameResource;
-import static org.trellisldp.rosid.common.RDFUtils.subjectIsSameResource;
 import static org.trellisldp.spi.RDFUtils.getInstance;
 
 import java.time.Instant;
@@ -38,7 +35,6 @@ import org.apache.commons.rdf.api.Literal;
 import org.apache.commons.rdf.api.Quad;
 import org.apache.commons.rdf.api.RDF;
 import org.apache.commons.rdf.api.RDFTerm;
-import org.trellisldp.vocabulary.DC;
 import org.trellisldp.vocabulary.PROV;
 import org.trellisldp.vocabulary.Trellis;
 import org.trellisldp.vocabulary.XSD;
@@ -62,38 +58,6 @@ public class RDFUtilsTest {
                     rdf.createLiteral(now().toString(), XSD.dateTime)));
         assertEquals(1L, dataset.stream().filter(hasObjectIRI).count());
         assertEquals(1L, dataset.stream().filter(hasSubjectIRI).count());
-    }
-
-    @Test
-    public void testInDomain() {
-        final Dataset dataset = rdf.createDataset();
-        dataset.add(rdf.createQuad(null, identifier, DC.hasPart,
-                    rdf.createIRI("trellis:repository/other/resource")));
-        dataset.add(rdf.createQuad(null, identifier, DC.hasPart,
-                    rdf.createIRI("trellis:other/some/resource")));
-        dataset.add(rdf.createQuad(null, identifier, DC.hasPart,
-                    rdf.createIRI("http://example.org/resource")));
-        assertEquals(1L, dataset.stream().filter(inDomain("trellis:repository")).count());
-    }
-
-    @Test
-    public void testSubjectResource() {
-        final Dataset dataset = rdf.createDataset();
-        dataset.add(rdf.createQuad(null, identifier, DC.hasPart,
-                    rdf.createIRI("trellis:repository/other/resource")));
-        dataset.add(rdf.createQuad(null, rdf.createIRI("trellis:other/some/resource"), DC.hasPart,
-                    rdf.createIRI("http://example.org/resource")));
-        assertEquals(1L, dataset.stream().filter(subjectIsSameResource(identifier)).count());
-    }
-
-    @Test
-    public void testObjectResource() {
-        final Dataset dataset = rdf.createDataset();
-        dataset.add(rdf.createQuad(null, rdf.createIRI("http://example.org/resource"), DC.hasPart,
-                    rdf.createIRI("trellis:repository/other/resource")));
-        dataset.add(rdf.createQuad(null, rdf.createIRI("trellis:other/some/resource"), DC.hasPart,
-                    identifier));
-        assertEquals(1L, dataset.stream().filter(objectIsSameResource(identifier)).count());
     }
 
     @Test

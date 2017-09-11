@@ -78,36 +78,6 @@ public final class RDFUtils {
     public static final Predicate<Quad> hasSubjectIRI = quad -> quad.getSubject() instanceof IRI;
 
     /**
-     * A predicate that returns whether the object of the quad is in the repository domain
-     * @param domain the domain
-     * @return a predicate that returns true if the object of the triple is in the repository domain
-     */
-    public static Predicate<Quad> inDomain(final String domain) {
-        return hasObjectIRI.and(quad -> ((IRI) quad.getObject()).getIRIString().split("/", 2)[0].equals(domain));
-    }
-
-    /**
-     * A predicate to determine if the object of the quad is equivalent to the provided IRI
-     * @param identifier the identifier
-     * @return a predicate that returns true if the object is equivalent to the same resource
-     */
-    public static Predicate<Quad> objectIsSameResource(final IRI identifier) {
-        return hasObjectIRI.and(quad -> ((IRI) quad.getObject()).getIRIString().split("#", 2)[0]
-                    .equals(identifier.getIRIString()));
-    }
-
-
-    /**
-     * A predicate to determine if the subject of the quad is equivalent to the provided IRI
-     * @param identifier the identifier
-     * @return a predicate that returns true if the subject is equivalent to the same resource
-     */
-    public static Predicate<Quad> subjectIsSameResource(final IRI identifier) {
-        return hasSubjectIRI.and(quad -> ((IRI) quad.getSubject()).getIRIString().split("#", 2)[0]
-                    .equals(identifier.getIRIString()));
-    }
-
-    /**
      * Get the IRI of the parent resource, if it exists
      * @param identifier the identifier
      * @return the parent if it exists

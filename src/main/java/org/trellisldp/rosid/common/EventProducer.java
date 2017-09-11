@@ -14,16 +14,10 @@
 package org.trellisldp.rosid.common;
 
 import static java.util.Optional.of;
-import static java.util.stream.Collectors.groupingBy;
 import static org.slf4j.LoggerFactory.getLogger;
 import static org.trellisldp.rosid.common.RDFUtils.getParent;
-import static org.trellisldp.rosid.common.RDFUtils.inDomain;
-import static org.trellisldp.rosid.common.RDFUtils.objectIsSameResource;
 import static org.trellisldp.rosid.common.RDFUtils.serialize;
-import static org.trellisldp.rosid.common.RDFUtils.subjectIsSameResource;
 import static org.trellisldp.rosid.common.RosidConstants.TOPIC_CACHE;
-import static org.trellisldp.rosid.common.RosidConstants.TOPIC_INBOUND_ADD;
-import static org.trellisldp.rosid.common.RosidConstants.TOPIC_INBOUND_DELETE;
 import static org.trellisldp.rosid.common.RosidConstants.TOPIC_LDP_CONTAINMENT_ADD;
 import static org.trellisldp.rosid.common.RosidConstants.TOPIC_LDP_CONTAINMENT_DELETE;
 import static org.trellisldp.rosid.common.RosidConstants.TOPIC_LDP_MEMBERSHIP_ADD;
@@ -32,7 +26,6 @@ import static org.trellisldp.spi.RDFUtils.getInstance;
 import static org.trellisldp.vocabulary.AS.Create;
 import static org.trellisldp.vocabulary.AS.Delete;
 import static org.trellisldp.vocabulary.DC.modified;
-import static org.trellisldp.vocabulary.Fedora.PreferInboundReferences;
 import static org.trellisldp.vocabulary.LDP.PreferContainment;
 import static org.trellisldp.vocabulary.LDP.contains;
 import static org.trellisldp.vocabulary.RDF.type;
@@ -116,26 +109,6 @@ class EventProducer {
             if (async) {
                 results.add(producer.send(new ProducerRecord<>(TOPIC_CACHE, identifier.getIRIString(), serialized)));
             }
-
-            // Handle the addition of any in-domain outbound triples
-            getAdded()
-                .filter(quad -> quad.getGraphName().filter(PreferUserManaged::equals).isPresent())
-                .filter(subjectIsSameResource(identifier))
-                .filter(inDomain(domain).and(objectIsSameResource(identifier).negate()))
-                .map(t -> rdf.createQuad(PreferInboundReferences, t.getSubject(), t.getPredicate(), t.getObject()))
-                .collect(groupingBy(q -> ((IRI) q.getObject()).getIRIString()))
-                .entrySet().forEach(e -> results.add(producer.send(
-                                new ProducerRecord<>(TOPIC_INBOUND_ADD, e.getKey(), serialize(e.getValue())))));
-
-            // Handle the removal of any in-domain outbound triples
-            getRemoved()
-                .filter(quad -> quad.getGraphName().filter(PreferUserManaged::equals).isPresent())
-                .filter(subjectIsSameResource(identifier))
-                .filter(inDomain(domain).and(objectIsSameResource(identifier).negate()))
-                .map(t -> rdf.createQuad(PreferInboundReferences, t.getSubject(), t.getPredicate(), t.getObject()))
-                .collect(groupingBy(q -> ((IRI) q.getObject()).getIRIString()))
-                .entrySet().forEach(e -> results.add(producer.send(
-                                new ProducerRecord<>(TOPIC_INBOUND_DELETE, e.getKey(), serialize(e.getValue())))));
 
             // Update the containment triples of the parent resource if this is a delete or create operation
             getParent(identifier.getIRIString()).ifPresent(container -> {

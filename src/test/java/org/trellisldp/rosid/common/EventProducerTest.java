@@ -20,8 +20,6 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.trellisldp.rosid.common.RosidConstants.TOPIC_CACHE;
-import static org.trellisldp.rosid.common.RosidConstants.TOPIC_INBOUND_ADD;
-import static org.trellisldp.rosid.common.RosidConstants.TOPIC_INBOUND_DELETE;
 import static org.trellisldp.rosid.common.RosidConstants.TOPIC_LDP_CONTAINMENT_ADD;
 import static org.trellisldp.rosid.common.RosidConstants.TOPIC_LDP_CONTAINMENT_DELETE;
 import static org.trellisldp.rosid.common.RosidConstants.TOPIC_LDP_MEMBERSHIP_ADD;
@@ -108,9 +106,7 @@ public class EventProducerTest {
         assertEquals(4L, event.getRemoved().count());
         assertEquals(5L, event.getAdded().count());
         final List<ProducerRecord<String, String>> records = producer.history();
-        assertEquals(2L, records.size());
-        assertEquals(1L, records.stream().filter(r -> r.topic().equals(TOPIC_INBOUND_DELETE)).count());
-        assertEquals(1L, records.stream().filter(r -> r.topic().equals(TOPIC_INBOUND_ADD)).count());
+        assertEquals(0L, records.size());
     }
 
     @Test
@@ -145,11 +141,9 @@ public class EventProducerTest {
         assertEquals(6L, event.getAdded().count());
         assertTrue(event.emit());
         final List<ProducerRecord<String, String>> records = producer.history();
-        assertEquals(4L, records.size());
+        assertEquals(2L, records.size());
         assertEquals(1L, records.stream().filter(r -> r.topic().equals(TOPIC_LDP_CONTAINMENT_ADD)).count());
         assertEquals(1L, records.stream().filter(r -> r.topic().equals(TOPIC_LDP_MEMBERSHIP_ADD)).count());
-        assertEquals(1L, records.stream().filter(r -> r.topic().equals(TOPIC_INBOUND_DELETE)).count());
-        assertEquals(1L, records.stream().filter(r -> r.topic().equals(TOPIC_INBOUND_ADD)).count());
     }
 
     @Test
@@ -185,11 +179,9 @@ public class EventProducerTest {
         assertEquals(6L, event.getAdded().count());
         assertTrue(event.emit());
         final List<ProducerRecord<String, String>> records = producer.history();
-        assertEquals(5L, records.size());
+        assertEquals(3L, records.size());
         assertEquals(1L, records.stream().filter(r -> r.topic().equals(TOPIC_LDP_CONTAINMENT_DELETE)).count());
         assertEquals(1L, records.stream().filter(r -> r.topic().equals(TOPIC_LDP_MEMBERSHIP_DELETE)).count());
-        assertEquals(1L, records.stream().filter(r -> r.topic().equals(TOPIC_INBOUND_DELETE)).count());
-        assertEquals(1L, records.stream().filter(r -> r.topic().equals(TOPIC_INBOUND_ADD)).count());
         assertEquals(1L, records.stream().filter(r -> r.topic().equals(TOPIC_CACHE)).count());
     }
 
