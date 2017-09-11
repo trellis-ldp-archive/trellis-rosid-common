@@ -99,7 +99,6 @@ class EventProducer {
      * @return true if the messages were successfully delivered to the kafka topics; false otherwise
      */
     public Boolean emit() {
-        final String domain = identifier.getIRIString().split("/", 2)[0];
         final Boolean isCreate = dataset.contains(of(PreferAudit), null, type, Create);
         final Boolean isDelete = dataset.contains(of(PreferAudit), null, type, Delete);
         try {
