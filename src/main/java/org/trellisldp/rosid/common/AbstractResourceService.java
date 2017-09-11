@@ -127,10 +127,11 @@ public abstract class AbstractResourceService implements ResourceService {
      * @param delete the quads to delete
      * @param add the quads to add
      * @param time the time the resource is written
+     * @param async true if the cache is written asynchronously; false otherwise
      * @return true if the write was successful; false otherwise
      */
     protected abstract Boolean write(final IRI identifier, final Stream<? extends Quad> delete,
-            final Stream<? extends Quad> add, final Instant time);
+            final Stream<? extends Quad> add, final Instant time, final Boolean async);
 
 
     /**
@@ -232,15 +233,15 @@ public abstract class AbstractResourceService implements ResourceService {
         getContainer(identifier).ifPresent(parent -> {
             if (isCreate) {
                 write(parent, empty(), Stream.of(rdf.createQuad(PreferContainment, parent, contains, identifier)),
-                        time);
+                        time, true);
             } else if (isDelete) {
                 write(parent, Stream.of(rdf.createQuad(PreferContainment, parent, contains, identifier)), empty(),
-                        time);
+                        time, true);
             }
         });
 
         if (!write(identifier, eventProducer.getRemoved(),
-                    concat(eventProducer.getAdded(), endedAtQuad(identifier, dataset, time)), time)) {
+                    concat(eventProducer.getAdded(), endedAtQuad(identifier, dataset, time)), time, false)) {
             LOGGER.error("Could not write data to persistence layer!");
             return false;
         }

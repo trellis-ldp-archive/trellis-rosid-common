@@ -147,7 +147,7 @@ public class AbstractResourceServiceTest {
 
         @Override
         public Boolean write(final IRI identifier, final Stream<? extends Quad> delete,
-                final Stream<? extends Quad> add, final Instant time) {
+                final Stream<? extends Quad> add, final Instant time, final Boolean async) {
             return !identifier.equals(unwritable);
         }
 
