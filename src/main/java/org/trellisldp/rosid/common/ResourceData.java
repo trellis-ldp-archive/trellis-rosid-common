@@ -122,6 +122,7 @@ public class ResourceData {
     private String id;
     private String ldpType;
     private List<String> userTypes;
+    private List<Instant> generatedAtTime;
     private BinaryData binary;
     private String insertedContentRelation;
     private String isMemberOfRelation;
@@ -218,6 +219,22 @@ public class ResourceData {
      */
     public void setHasAcl(final Boolean hasAcl) {
         this.hasAcl = hasAcl;
+    }
+
+    /**
+     * Get a list of memento datetime values
+     * @return the memento datetime values
+     */
+    public List<Instant> getGeneratedAtTime() {
+        return generatedAtTime;
+    }
+
+    /**
+     * Set the list of memento datetime values
+     * @param generatedAtTime the memento datetime values
+     */
+    public void setGeneratedAtTime(final List<Instant> generatedAtTime) {
+        this.generatedAtTime = generatedAtTime;
     }
 
     /**
@@ -358,14 +375,18 @@ public class ResourceData {
      * Create a ResourcData object from an identifier and a dataset
      * @param identifier the identifier
      * @param dataset the dataset
+     * @param mementos the mementos
      * @return the resource data, if present from the dataset
      */
-    public static Optional<ResourceData> from(final IRI identifier, final Dataset dataset) {
+    public static Optional<ResourceData> from(final IRI identifier, final Dataset dataset,
+            final List<Instant> mementos) {
         requireNonNull(identifier, "identifier may not be null!");
         requireNonNull(dataset, "dataset may not be null!");
+        requireNonNull(mementos, "mementos may not be null!");
 
         final ResourceData rd = new ResourceData();
         rd.setId(identifier.getIRIString());
+        rd.setGeneratedAtTime(mementos);
 
         rd.setHasAcl(dataset.stream(of(Trellis.PreferAccessControl), null, RDF.type, ACL.Authorization)
                 .findAny().isPresent());

@@ -15,6 +15,8 @@ package org.trellisldp.rosid.common;
 
 import static org.trellisldp.vocabulary.RDF.type;
 import static java.time.Instant.now;
+import static java.util.Collections.emptyList;
+import static java.util.Collections.singletonList;
 import static com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -84,7 +86,7 @@ public class ResourceDataTest {
         dataset.add(rdf.createQuad(Trellis.PreferUserManaged, identifier, OA.annotationService,
                     annotationService));
 
-        final Optional<ResourceData> rd = ResourceData.from(identifier, dataset);
+        final Optional<ResourceData> rd = ResourceData.from(identifier, dataset, singletonList(time));
         assertTrue(rd.isPresent());
         rd.ifPresent(data -> {
             assertEquals(identifier.getIRIString(), data.getId());
@@ -93,6 +95,8 @@ public class ResourceDataTest {
             assertEquals(time, data.getModified());
             assertEquals("http://www.trellisrepo.org/ns/trellisresource.jsonld", data.getContext());
             assertEquals(annotationService.getIRIString(), data.getAnnotationService());
+            assertTrue(data.getGeneratedAtTime().contains(time));
+            assertEquals(1L, data.getGeneratedAtTime().size());
         });
     }
 
@@ -114,7 +118,7 @@ public class ResourceDataTest {
         dataset.add(rdf.createQuad(Trellis.PreferServerManaged, binary, DC.format, format));
         dataset.add(rdf.createQuad(Trellis.PreferServerManaged, binary, DC.extent, extent));
 
-        final Optional<ResourceData> rd = ResourceData.from(identifier, dataset);
+        final Optional<ResourceData> rd = ResourceData.from(identifier, dataset, emptyList());
         assertTrue(rd.isPresent());
         rd.ifPresent(data -> {
             assertFalse(data.getHasAcl());
@@ -127,6 +131,7 @@ public class ResourceDataTest {
             assertEquals(12345L, (long) data.getBinary().getSize());
             assertEquals(format.getLexicalForm(), data.getBinary().getFormat());
             assertEquals(time, data.getBinary().getModified());
+            assertTrue(data.getGeneratedAtTime().isEmpty());
         });
     }
 
@@ -148,7 +153,7 @@ public class ResourceDataTest {
         dataset.add(rdf.createQuad(Trellis.PreferUserManaged, identifier, LDP.isMemberOfRelation, diff));
         dataset.add(rdf.createQuad(Trellis.PreferAccessControl, rdf.createBlankNode(), type, ACL.Authorization));
 
-        final Optional<ResourceData> rd = ResourceData.from(identifier, dataset);
+        final Optional<ResourceData> rd = ResourceData.from(identifier, dataset, singletonList(time));
         assertTrue(rd.isPresent());
         rd.ifPresent(data -> {
             assertTrue(data.getHasAcl());
@@ -160,6 +165,8 @@ public class ResourceDataTest {
             assertEquals(time, data.getModified());
             assertEquals(diff.getIRIString(), data.getIsMemberOfRelation());
             assertNull(data.getBinary());
+            assertTrue(data.getGeneratedAtTime().contains(time));
+            assertEquals(1L, data.getGeneratedAtTime().size());
         });
     }
 }
