@@ -160,7 +160,7 @@ public class AbstractResourceServiceTest {
         }
 
         @Override
-        public Stream<IRI> compact(final IRI identifier) {
+        public Stream<IRI> compact(final IRI identifier, final Instant from, final Instant until) {
             throw new UnsupportedOperationException("compact is not implemented");
         }
 
