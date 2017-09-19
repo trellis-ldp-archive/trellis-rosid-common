@@ -33,16 +33,16 @@ import java.util.Map;
 import java.util.Optional;
 
 import org.apache.commons.io.IOUtils;
-import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.cache.NodeCache;
 import org.apache.zookeeper.KeeperException.NoNodeException;
 import org.slf4j.Logger;
 import org.trellisldp.spi.NamespaceService;
+import org.trellisldp.spi.RuntimeRepositoryException;
 
 /**
  * @author acoburn
  */
-public class Namespaces implements NamespaceService, AutoCloseable {
+public class Namespaces implements NamespaceService {
 
     private static final Logger LOGGER = getLogger(Namespaces.class);
 
@@ -50,56 +50,30 @@ public class Namespaces implements NamespaceService, AutoCloseable {
 
     private final NodeCache cache;
 
-    private final CuratorFramework curator;
-
     private Map<String, String> data = emptyMap();
 
     /**
      * Create a zookeeper-based namespace service
-     * @param curator the curator client
-     * @throws Exception errors setting up ZooKeeper
+     * @param cache the nodecache
      */
-    public Namespaces(final CuratorFramework curator) throws Exception {
-        this(curator, null);
+    public Namespaces(final NodeCache cache) {
+        this(cache, null);
     }
 
     /**
      * Create a zookeeper-based namespace service
-     * @param curator the curator client
+     * @param cache the nodecache
      * @param filePath the file
-     * @throws Exception errors setting up ZooKeeper
      */
-    public Namespaces(final CuratorFramework curator, final String filePath) throws Exception {
-        requireNonNull(curator, "Curator framework may not be null!");
-        this.curator = curator;
-        cache = new NodeCache(curator, ZNODE_NAMESPACES);
-        cache.start();
-        cache.getListenable().addListener(() -> data = read(cache.getCurrentData().getData()));
-
-        this.data = init(filePath);
-    }
-
-    private Map<String, String> init(final String filePath) throws Exception {
-        // Preallocate data, if provided
-        if (nonNull(filePath)) {
-            final File file = new File(filePath);
-            if (file.exists()) {
-                try (final FileInputStream input = new FileInputStream(file)) {
-                    // TODO - JDK9 InputStream::readAllBytes
-                    final byte[] bytes = IOUtils.toByteArray(input);
-                    final Map<String, String> ns = read(bytes);
-                    curator.create().orSetData().forPath(ZNODE_NAMESPACES, bytes);
-                    return ns;
-                } catch (final IOException ex) {
-                    LOGGER.warn("Unable to read provided file: {}", ex.getMessage());
-                }
-            }
-        }
+    public Namespaces(final NodeCache cache, final String filePath) {
+        requireNonNull(cache, "NodeCache may not be null!");
+        this.cache = cache;
         try {
-            return read(curator.getData().forPath(ZNODE_NAMESPACES));
-        } catch (final NoNodeException ex) {
-            LOGGER.warn("No namespace data stored in ZooKeeper: {}", ex.getMessage());
-            return emptyMap();
+            this.cache.getListenable().addListener(() -> data = read(cache.getCurrentData().getData()));
+            this.data = init(filePath);
+        } catch (final Exception ex) {
+            LOGGER.error("Could not create a zk node cache: {}", ex);
+            throw new RuntimeRepositoryException(ex);
         }
     }
 
@@ -126,17 +100,12 @@ public class Namespaces implements NamespaceService, AutoCloseable {
 
         data.put(prefix, namespace);
         try {
-            curator.create().orSetData().forPath(ZNODE_NAMESPACES, write(data));
+            cache.getClient().create().orSetData().forPath(ZNODE_NAMESPACES, write(data));
             return true;
         } catch (final Exception ex) {
             LOGGER.error("Unable to set data: {}", ex.getMessage());
         }
         return false;
-    }
-
-    @Override
-    public void close() throws Exception {
-        cache.close();
     }
 
     private static byte[] write(final Map<String, String> data) {
@@ -146,6 +115,26 @@ public class Namespaces implements NamespaceService, AutoCloseable {
             LOGGER.error("Unable to serialize data: {}", ex.getMessage());
        }
        return new byte[0];
+    }
+
+    private Map<String, String> init(final String filePath) throws Exception {
+        if (nonNull(filePath)) {
+            try (final FileInputStream input = new FileInputStream(new File(filePath))) {
+                // TODO - JDK9 InputStream::readAllBytes
+                final byte[] bytes = IOUtils.toByteArray(input);
+                final Map<String, String> ns = read(bytes);
+                cache.getClient().create().orSetData().forPath(ZNODE_NAMESPACES, bytes);
+                return ns;
+            } catch (final IOException ex) {
+                LOGGER.warn("Unable to read provided file: {}", ex.getMessage());
+            }
+        }
+        try {
+            return read(cache.getClient().getData().forPath(ZNODE_NAMESPACES));
+        } catch (final NoNodeException ex) {
+            LOGGER.warn("No namespace data stored in ZooKeeper: {}", ex.getMessage());
+            return emptyMap();
+        }
     }
 
     private static Map<String, String> read(final byte[] data) {

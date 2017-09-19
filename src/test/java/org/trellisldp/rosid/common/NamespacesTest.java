@@ -13,10 +13,13 @@
  */
 package org.trellisldp.rosid.common;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.curator.framework.CuratorFrameworkFactory.newClient;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.when;
+import static org.trellisldp.rosid.common.RosidConstants.ZNODE_NAMESPACES;
 
 import java.io.File;
 import java.net.URL;
@@ -24,26 +27,59 @@ import java.math.BigInteger;
 import java.security.SecureRandom;
 
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.api.GetDataBuilder;
+import org.apache.curator.framework.listen.ListenerContainer;
+import org.apache.curator.framework.recipes.cache.NodeCache;
+import org.apache.curator.framework.recipes.cache.NodeCacheListener;
 import org.apache.curator.retry.RetryNTimes;
 import org.apache.curator.test.TestingServer;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.trellisldp.spi.NamespaceService;
+import org.trellisldp.spi.RuntimeRepositoryException;
 import org.trellisldp.vocabulary.JSONLD;
 import org.trellisldp.vocabulary.LDP;
 
 /**
  * @author acoburn
  */
+@RunWith(MockitoJUnitRunner.class)
 public class NamespacesTest {
 
     private static final String nsDoc = "/testNamespaces.json";
     private static TestingServer curator;
 
+    @Mock
+    private static CuratorFramework mockCurator;
+
+    @Mock
+    private NodeCache mockCache;
+
+    @Mock
+    private ListenerContainer<NodeCacheListener> mockListenable;
+
+    @Mock
+    private GetDataBuilder mockDataBuilder;
+
+    @BeforeClass
+    public static void setUp() throws Exception {
+        curator = new TestingServer(true);
+    }
+
+    @Before
+    public void setUpMocks() throws Exception {
+        when(mockCache.getClient()).thenReturn(mockCurator);
+        when(mockCache.getListenable()).thenReturn(mockListenable);
+    }
+
     @Test
     public void testReadNamespaces() throws Exception {
         final URL res = Namespaces.class.getResource(nsDoc);
-        final NamespaceService service = new Namespaces(getZkClient(curator.getConnectString()), res.getPath());
+        final NamespaceService service = new Namespaces(getZkCache(curator.getConnectString()), res.getPath());
 
         assertEquals(2, service.getNamespaces().size());
         assertEquals(LDP.URI, service.getNamespace("ldp").get());
@@ -53,7 +89,7 @@ public class NamespacesTest {
     @Test
     public void testReadNamespacesNoFile() throws Exception {
         final URL res = Namespaces.class.getResource(nsDoc);
-        final NamespaceService service = new Namespaces(getZkClient(curator.getConnectString()),
+        final NamespaceService service = new Namespaces(getZkCache(curator.getConnectString()),
                 res.getPath() + "Im-gonna-go-to-London.txt");
 
         assertEquals(0, service.getNamespaces().size());
@@ -63,32 +99,40 @@ public class NamespacesTest {
     public void testWriteNamespaces() throws Exception {
         final File file = new File(Namespaces.class.getResource(nsDoc).getPath());
         final String filename = file.getParent() + "/" + randomFilename();
-        try (final Namespaces svc1 = new Namespaces(getZkClient(curator.getConnectString()), file.getPath())) {
-            assertEquals(2, svc1.getNamespaces().size());
-            assertFalse(svc1.getNamespace("jsonld").isPresent());
-            assertFalse(svc1.getPrefix(JSONLD.URI).isPresent());
-            assertTrue(svc1.setPrefix("jsonld", JSONLD.URI));
-            assertEquals(3, svc1.getNamespaces().size());
-            assertEquals(JSONLD.URI, svc1.getNamespace("jsonld").get());
-            assertEquals("jsonld", svc1.getPrefix(JSONLD.URI).get());
-        }
+        final Namespaces svc1 = new Namespaces(getZkCache(curator.getConnectString()), file.getPath());
+        assertEquals(2, svc1.getNamespaces().size());
+        assertFalse(svc1.getNamespace("jsonld").isPresent());
+        assertFalse(svc1.getPrefix(JSONLD.URI).isPresent());
+        assertTrue(svc1.setPrefix("jsonld", JSONLD.URI));
+        assertEquals(3, svc1.getNamespaces().size());
+        assertEquals(JSONLD.URI, svc1.getNamespace("jsonld").get());
+        assertEquals("jsonld", svc1.getPrefix(JSONLD.URI).get());
 
-        try (final Namespaces svc2 = new Namespaces(getZkClient(curator.getConnectString()))) {
-            assertEquals(3, svc2.getNamespaces().size());
-            assertEquals(JSONLD.URI, svc2.getNamespace("jsonld").get());
-            assertFalse(svc2.setPrefix("jsonld", JSONLD.URI));
-        }
+        final Namespaces svc2 = new Namespaces(getZkCache(curator.getConnectString()));
+        assertEquals(3, svc2.getNamespaces().size());
+        assertEquals(JSONLD.URI, svc2.getNamespace("jsonld").get());
+        assertFalse(svc2.setPrefix("jsonld", JSONLD.URI));
     }
 
-    private static CuratorFramework getZkClient(final String connectString) {
+    @Test(expected = RuntimeRepositoryException.class)
+    public void testErrorHandler() {
+        new Namespaces(mockCache);
+    }
+
+    @Test
+    public void testError2() throws Exception {
+        when(mockCurator.getData()).thenReturn(mockDataBuilder);
+        when(mockDataBuilder.forPath(ZNODE_NAMESPACES)).thenReturn("{}".getBytes(UTF_8));
+        final Namespaces ns = new Namespaces(mockCache);
+        assertFalse(ns.setPrefix("foo", "bar"));
+    }
+
+    private static NodeCache getZkCache(final String connectString) throws Exception {
         final CuratorFramework zk = newClient(connectString, new RetryNTimes(10, 1000));
         zk.start();
-        return zk;
-    }
-
-    @BeforeClass
-    public static void setUp() throws Exception {
-        curator = new TestingServer(true);
+        final NodeCache cache = new NodeCache(zk, ZNODE_NAMESPACES);
+        cache.start();
+        return cache;
     }
 
     private static String randomFilename() {
