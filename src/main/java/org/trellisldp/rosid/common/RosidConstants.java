@@ -58,6 +58,11 @@ public final class RosidConstants {
      */
     public static final String ZNODE_COORDINATION = "/session";
 
+    /**
+     * The ZooKeeper namespace data node
+     */
+    public static final String ZNODE_NAMESPACES = "/namespaces";
+
     private RosidConstants() {
         // prevent instantiation
     }

@@ -66,6 +66,7 @@ dependencies {
     implementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: jacksonVersion
     implementation group: 'com.fasterxml.jackson.datatype', name: 'jackson-datatype-jsr310', version: jacksonVersion
     implementation group: 'commons-codec', name: 'commons-codec', version: commonsCodecVersion
+    implementation group: 'commons-io', name: 'commons-io', version: commonsIoVersion
     implementation group: 'org.apache.commons', name: 'commons-rdf-jena', version: commonsRdfVersion
     implementation group: 'org.apache.jena', name: 'jena-osgi', version: jenaVersion
     implementation group: 'org.slf4j', name: 'slf4j-api', version: slf4jVersion
