@@ -13,7 +13,6 @@
  */
 package org.trellisldp.rosid.common;
 
-import static java.util.Collections.emptyMap;
 import static java.util.Collections.unmodifiableMap;
 import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
@@ -50,7 +49,7 @@ public class Namespaces implements NamespaceService {
 
     private final NodeCache cache;
 
-    private Map<String, String> data = emptyMap();
+    private Map<String, String> data = new HashMap<>();
 
     /**
      * Create a zookeeper-based namespace service
@@ -133,7 +132,7 @@ public class Namespaces implements NamespaceService {
             return read(cache.getClient().getData().forPath(ZNODE_NAMESPACES));
         } catch (final NoNodeException ex) {
             LOGGER.warn("No namespace data stored in ZooKeeper: {}", ex.getMessage());
-            return emptyMap();
+            return new HashMap<>();
         }
     }
 
