@@ -37,13 +37,12 @@ import static org.trellisldp.vocabulary.Trellis.PreferUserManaged;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
-import org.apache.commons.rdf.api.BlankNodeOrIRI;
 import org.apache.commons.rdf.api.Dataset;
 import org.apache.commons.rdf.api.IRI;
 import org.apache.commons.rdf.api.Quad;
@@ -97,15 +96,41 @@ class EventProducer {
         this(producer, identifier, dataset, false);
     }
 
+    private Consumer<String> emitToParent(final IRI identifier, final Dataset dataset,
+            final List<Future<RecordMetadata>> results) {
+        final Boolean isCreate = dataset.contains(of(PreferAudit), null, type, Create);
+        final Boolean isDelete = dataset.contains(of(PreferAudit), null, type, Delete);
+        final String containmentTopic = isDelete ? TOPIC_LDP_CONTAINMENT_DELETE : TOPIC_LDP_CONTAINMENT_ADD;
+        final String membershipTopic = isDelete ? TOPIC_LDP_MEMBERSHIP_DELETE : TOPIC_LDP_MEMBERSHIP_ADD;
+
+        return container -> {
+            try (final Dataset data = rdf.createDataset()) {
+                if (isDelete || isCreate) {
+                    data.add(
+                            rdf.createQuad(PreferContainment, rdf.createIRI(container), contains, identifier));
+                    dataset.stream().forEach(q -> {
+                        if (q.getGraphName().equals(of(PreferAudit)) && q.getPredicate().equals(type) &&
+                                q.getObject().equals(Create) || q.getObject().equals(Delete)) {
+                            data.add(rdf.createQuad(PreferAudit, q.getSubject(), type, Update));
+                        } else {
+                            data.add(q);
+                        }
+                    });
+                    final String serialized = serialize(data);
+                    results.add(producer.send(new ProducerRecord<>(containmentTopic, container, serialized)));
+                    results.add(producer.send(new ProducerRecord<>(membershipTopic, container, serialized)));
+                }
+            } catch (final Exception ex) {
+                LOGGER.error("Error processing dataset: {}", ex.getMessage());
+            }
+        };
+    }
+
     /**
      * Emit messages to the relevant kafka topics
      * @return true if the messages were successfully delivered to the kafka topics; false otherwise
      */
     public Boolean emit() {
-        final Boolean isCreate = dataset.contains(of(PreferAudit), null, type, Create);
-        final Boolean isDelete = dataset.contains(of(PreferAudit), null, type, Delete);
-        final Optional<BlankNodeOrIRI> subject = dataset.stream(of(PreferAudit), null, type, null).map(Quad::getSubject)
-            .findFirst();
 
         try {
             final List<Future<RecordMetadata>> results = new ArrayList<>();
@@ -116,36 +141,7 @@ class EventProducer {
             }
 
             // Update the containment triples of the parent resource if this is a delete or create operation
-            getParent(identifier.getIRIString()).ifPresent(container -> {
-                try (final Dataset parentData = rdf.createDataset()) {
-                    if (isDelete || isCreate) {
-                        parentData.add(
-                                rdf.createQuad(PreferContainment, rdf.createIRI(container), contains, identifier));
-                        dataset.stream().forEach(q -> {
-                            if (q.getGraphName().equals(of(PreferAudit)) && q.getPredicate().equals(type) &&
-                                    q.getObject().equals(Create) || q.getObject().equals(Delete)) {
-                                parentData.add(rdf.createQuad(PreferAudit, q.getSubject(), type, Update));
-                            } else {
-                                parentData.add(q);
-                            }
-                        });
-                        final String serialized = serialize(parentData);
-                        if (isDelete) {
-                            results.add(producer.send(
-                                        new ProducerRecord<>(TOPIC_LDP_CONTAINMENT_DELETE, container, serialized)));
-                            results.add(producer.send(
-                                        new ProducerRecord<>(TOPIC_LDP_MEMBERSHIP_DELETE, container, serialized)));
-                        } else {
-                            results.add(producer.send(
-                                        new ProducerRecord<>(TOPIC_LDP_CONTAINMENT_ADD, container, serialized)));
-                            results.add(producer.send(
-                                        new ProducerRecord<>(TOPIC_LDP_MEMBERSHIP_ADD, container, serialized)));
-                        }
-                    }
-                } catch (final Exception ex) {
-                    LOGGER.error("Error processing dataset: {}", ex.getMessage());
-                }
-            });
+            getParent(identifier.getIRIString()).ifPresent(emitToParent(identifier, dataset, results));
 
             for (final Future<RecordMetadata> result : results) {
                 final RecordMetadata res = result.get();
