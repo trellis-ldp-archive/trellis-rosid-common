@@ -81,7 +81,7 @@ public abstract class AbstractResourceService implements ResourceService {
 
     protected final EventService notifications;
 
-    protected final Map<String, String> partitions;
+    protected final Map<String, String> partitionUrls;
 
     protected final Producer<String, String> producer;
 
@@ -89,24 +89,24 @@ public abstract class AbstractResourceService implements ResourceService {
 
     /**
      * Create an AbstractResourceService with the given producer
-     * @param partitions the partitions
+     * @param partitionUrls the partition URLs
      * @param producer the kafka producer
      * @param curator the zookeeper curator
      * @param notifications the event service
      * @param idSupplier a supplier of new identifiers
      * @param async write cached resources asynchronously if true, synchronously if false
      */
-    public AbstractResourceService(final Map<String, String> partitions, final Producer<String, String> producer,
+    public AbstractResourceService(final Map<String, String> partitionUrls, final Producer<String, String> producer,
             final CuratorFramework curator, final EventService notifications, final Supplier<String> idSupplier,
             final Boolean async) {
 
-        requireNonNull(partitions, "partition configuration may not be null!");
+        requireNonNull(partitionUrls, "partition URL configuration may not be null!");
 
-        RESERVED_PARTITION_NAMES.stream().filter(partitions::containsKey).findAny().ifPresent(name -> {
+        RESERVED_PARTITION_NAMES.stream().filter(partitionUrls::containsKey).findAny().ifPresent(name -> {
             throw new IllegalArgumentException("Invalid partition name: " + name);
         });
 
-        this.partitions = partitions;
+        this.partitionUrls = partitionUrls;
         this.notifications = notifications;
         this.async = async;
         this.idSupplier = idSupplier;
@@ -163,7 +163,7 @@ public abstract class AbstractResourceService implements ResourceService {
         }
 
         if (status && nonNull(notifications)) {
-            final String baseUrl = partitions.get(identifier.getIRIString().split(":", 2)[1].split("/")[0]);
+            final String baseUrl = partitionUrls.get(identifier.getIRIString().split(":", 2)[1].split("/")[0]);
             notifications.emit(new Notification(toExternalTerm(identifier, baseUrl).getIRIString(), dataset));
         }
 
