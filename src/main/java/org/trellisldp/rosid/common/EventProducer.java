@@ -118,6 +118,8 @@ class EventProducer {
                     });
                     final String serialized = serialize(data);
                     results.add(producer.send(new ProducerRecord<>(containmentTopic, container, serialized)));
+                    // TODO - this is wrong -- the event should go to the member resourc, if it exists
+                    // (the code needs to get() that resource and check first)
                     results.add(producer.send(new ProducerRecord<>(membershipTopic, container, serialized)));
                 }
             } catch (final Exception ex) {
