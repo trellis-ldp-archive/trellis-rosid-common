@@ -225,7 +225,7 @@ public abstract class AbstractResourceService implements ResourceService {
         }
 
         final EventProducer eventProducer = new EventProducer(producer, identifier, dataset, async);
-        try (final Stream<Quad> stream = resource.map(Resource::stream).orElseGet(Stream::empty)) {
+        try (final Stream<? extends Quad> stream = resource.map(Resource::stream).orElseGet(Stream::empty)) {
             eventProducer.into(stream);
         }
 
