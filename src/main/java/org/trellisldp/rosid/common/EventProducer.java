@@ -13,9 +13,9 @@
  */
 package org.trellisldp.rosid.common;
 
+import static java.util.Optional.empty;
 import static java.util.Optional.of;
 import static org.slf4j.LoggerFactory.getLogger;
-import static org.trellisldp.rosid.common.RDFUtils.getParent;
 import static org.trellisldp.rosid.common.RDFUtils.serialize;
 import static org.trellisldp.rosid.common.RosidConstants.TOPIC_CACHE;
 import static org.trellisldp.rosid.common.RosidConstants.TOPIC_LDP_CONTAINMENT_ADD;
@@ -27,7 +27,10 @@ import static org.trellisldp.vocabulary.AS.Create;
 import static org.trellisldp.vocabulary.AS.Delete;
 import static org.trellisldp.vocabulary.AS.Update;
 import static org.trellisldp.vocabulary.DC.modified;
+import static org.trellisldp.vocabulary.LDP.DirectContainer;
+import static org.trellisldp.vocabulary.LDP.IndirectContainer;
 import static org.trellisldp.vocabulary.LDP.PreferContainment;
+import static org.trellisldp.vocabulary.LDP.PreferMembership;
 import static org.trellisldp.vocabulary.LDP.contains;
 import static org.trellisldp.vocabulary.RDF.type;
 import static org.trellisldp.vocabulary.Trellis.PreferAudit;
@@ -37,10 +40,12 @@ import static org.trellisldp.vocabulary.Trellis.PreferUserManaged;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 import org.apache.commons.rdf.api.Dataset;
@@ -51,6 +56,7 @@ import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.slf4j.Logger;
+import org.trellisldp.api.Resource;
 
 /**
  * @author acoburn
@@ -67,6 +73,8 @@ class EventProducer {
 
     private final IRI identifier;
 
+    private final Optional<Resource> parent;
+
     private final Dataset dataset;
 
     private final Boolean async;
@@ -76,13 +84,15 @@ class EventProducer {
      * @param producer the kafka producer
      * @param identifier the identifier
      * @param dataset the dataset
+     * @param the parent resource, if one exists
      * @param async whether the cache is generated asynchronously
      */
     public EventProducer(final Producer<String, String> producer, final IRI identifier, final Dataset dataset,
-            final Boolean async) {
+            final Optional<Resource> parent, final Boolean async) {
         this.producer = producer;
         this.identifier = identifier;
         this.dataset = dataset;
+        this.parent = parent;
         this.async = async;
     }
 
@@ -91,12 +101,57 @@ class EventProducer {
      * @param producer the kafka producer
      * @param identifier the identifier
      * @param dataset the dataset
+     * @param the parent resource, if one exists
      */
-    public EventProducer(final Producer<String, String> producer, final IRI identifier, final Dataset dataset) {
-        this(producer, identifier, dataset, false);
+    public EventProducer(final Producer<String, String> producer, final IRI identifier, final Dataset dataset,
+            final Optional<Resource> parent) {
+        this(producer, identifier, dataset, parent, false);
     }
 
-    private Consumer<String> emitToParent(final IRI identifier, final Dataset dataset,
+    private static final Function<Quad, Quad> auditTypeMapper = q-> {
+        if (type.equals(q.getPredicate()) && (q.getObject().equals(Delete) || q.getObject().equals(Create))) {
+            return rdf.createQuad(PreferAudit, q.getSubject(), q.getPredicate(), Update);
+        }
+        return q;
+    };
+
+    private ProducerRecord<String, String> buildContainmentMessage(final String topic, final IRI resource,
+            final Resource parent, final Dataset dataset) throws Exception {
+        try (final Dataset data = rdf.createDataset()) {
+            dataset.stream(of(PreferAudit), null, null, null).map(auditTypeMapper).forEach(data::add);
+            data.add(PreferContainment, parent.getIdentifier(), contains, resource);
+            return new ProducerRecord<>(topic, parent.getIdentifier().getIRIString(), serialize(data));
+        }
+    }
+
+    private Optional<ProducerRecord<String, String>> buildMembershipMessage(final String topic, final IRI resource,
+            final Resource parent, final Dataset dataset) throws Exception {
+        try (final Dataset data = rdf.createDataset()) {
+            if (DirectContainer.equals(parent.getInteractionModel())) {
+                parent.getMembershipResource().ifPresent(member -> {
+                    parent.getMemberRelation().ifPresent(relation ->
+                        data.add(rdf.createQuad(PreferMembership, member, relation, resource)));
+                    parent.getMemberOfRelation().ifPresent(relation ->
+                        data.add(rdf.createQuad(PreferMembership, resource, relation, member)));
+                });
+            } else if (IndirectContainer.equals(parent.getInteractionModel())) {
+                parent.getMembershipResource().ifPresent(member ->
+                    parent.getMemberRelation().ifPresent(relation ->
+                        parent.getInsertedContentRelation().ifPresent(inserted ->
+                            dataset.stream(of(PreferUserManaged), null, inserted, null).forEach(q ->
+                                data.add(rdf.createQuad(PreferMembership, member, relation, q.getObject()))))));
+            }
+            final Optional<String> key = data.stream(of(PreferMembership), null, null, null).map(Quad::getSubject)
+                .filter(x -> x instanceof IRI).map(x -> (IRI) x).map(IRI::getIRIString).findFirst();
+            if (key.isPresent()) {
+                dataset.stream(of(PreferAudit), null, null, null).map(auditTypeMapper).forEach(data::add);
+                return of(new ProducerRecord<>(topic, key.get(), serialize(data)));
+            }
+            return empty();
+        }
+    }
+
+    private Consumer<Resource> emitToParent(final IRI identifier, final Dataset dataset,
             final List<Future<RecordMetadata>> results) {
         final Boolean isCreate = dataset.contains(of(PreferAudit), null, type, Create);
         final Boolean isDelete = dataset.contains(of(PreferAudit), null, type, Delete);
@@ -104,26 +159,19 @@ class EventProducer {
         final String membershipTopic = isDelete ? TOPIC_LDP_MEMBERSHIP_DELETE : TOPIC_LDP_MEMBERSHIP_ADD;
 
         return container -> {
-            try (final Dataset data = rdf.createDataset()) {
-                if (isDelete || isCreate) {
-                    data.add(
-                            rdf.createQuad(PreferContainment, rdf.createIRI(container), contains, identifier));
-                    dataset.stream().forEach(q -> {
-                        if (q.getGraphName().equals(of(PreferAudit)) && q.getPredicate().equals(type) &&
-                                q.getObject().equals(Create) || q.getObject().equals(Delete)) {
-                            data.add(rdf.createQuad(PreferAudit, q.getSubject(), type, Update));
-                        } else {
-                            data.add(q);
-                        }
+            if (isDelete || isCreate) {
+                try {
+                    LOGGER.info("Sending to parent: {}", container.getIdentifier());
+                    results.add(producer.send(buildContainmentMessage(containmentTopic, identifier, container,
+                                    dataset)));
+
+                    buildMembershipMessage(membershipTopic, identifier, container, dataset).ifPresent(msg -> {
+                            LOGGER.info("Sending to member resource: {}", container.getMembershipResource());
+                            results.add(producer.send(msg));
                     });
-                    final String serialized = serialize(data);
-                    results.add(producer.send(new ProducerRecord<>(containmentTopic, container, serialized)));
-                    // TODO - this is wrong -- the event should go to the member resourc, if it exists
-                    // (the code needs to get() that resource and check first)
-                    results.add(producer.send(new ProducerRecord<>(membershipTopic, container, serialized)));
+                } catch (final Exception ex) {
+                    LOGGER.error("Error processing dataset: {}", ex.getMessage());
                 }
-            } catch (final Exception ex) {
-                LOGGER.error("Error processing dataset: {}", ex.getMessage());
             }
         };
     }
@@ -143,7 +191,7 @@ class EventProducer {
             }
 
             // Update the containment triples of the parent resource if this is a delete or create operation
-            getParent(identifier.getIRIString()).ifPresent(emitToParent(identifier, dataset, results));
+            parent.ifPresent(emitToParent(identifier, dataset, results));
 
             for (final Future<RecordMetadata> result : results) {
                 final RecordMetadata res = result.get();

@@ -14,6 +14,7 @@
 package org.trellisldp.rosid.common;
 
 import static java.time.Instant.now;
+import static java.util.Optional.of;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -22,8 +23,6 @@ import static org.mockito.Mockito.when;
 import static org.trellisldp.rosid.common.RosidConstants.TOPIC_CACHE;
 import static org.trellisldp.rosid.common.RosidConstants.TOPIC_LDP_CONTAINMENT_ADD;
 import static org.trellisldp.rosid.common.RosidConstants.TOPIC_LDP_CONTAINMENT_DELETE;
-import static org.trellisldp.rosid.common.RosidConstants.TOPIC_LDP_MEMBERSHIP_ADD;
-import static org.trellisldp.rosid.common.RosidConstants.TOPIC_LDP_MEMBERSHIP_DELETE;
 import static org.trellisldp.vocabulary.RDF.type;
 
 import java.util.List;
@@ -45,6 +44,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
+import org.trellisldp.api.Resource;
 import org.trellisldp.vocabulary.AS;
 import org.trellisldp.vocabulary.DC;
 import org.trellisldp.vocabulary.LDP;
@@ -65,6 +65,7 @@ public class EventProducerTest {
     private final IRI other2 = rdf.createIRI("trellis:repository/other2");
     private final IRI inbox = rdf.createIRI("http://example.org/inbox");
     private final IRI subject = rdf.createIRI("http://example.org/subject");
+    private final IRI parent = rdf.createIRI("trellis:repository");
 
     private final MockProducer<String, String> producer = new MockProducer<>(true,
             new StringSerializer(), new StringSerializer());
@@ -74,6 +75,9 @@ public class EventProducerTest {
 
     @Mock
     private Future<RecordMetadata> mockFuture;
+
+    @Mock
+    private Resource mockParent;
 
     @Test
     public void testEventProducer() throws Exception {
@@ -99,7 +103,7 @@ public class EventProducerTest {
         modified.add(rdf.createQuad(Trellis.PreferServerManaged, identifier, type, LDP.Container));
 
         producer.clear();
-        final EventProducer event = new EventProducer(producer, identifier, modified, false);
+        final EventProducer event = new EventProducer(producer, identifier, modified, of(mockParent), false);
         event.into(existing.stream());
 
         assertTrue(event.emit());
@@ -111,6 +115,8 @@ public class EventProducerTest {
 
     @Test
     public void testEventCreation() throws Exception {
+        when(mockParent.getIdentifier()).thenReturn(parent);
+
         final Literal time = rdf.createLiteral(now().toString(), XSD.dateTime);
         final Literal otherTime = rdf.createLiteral(now().plusSeconds(20).toString(), XSD.dateTime);
         final Dataset existing = rdf.createDataset();
@@ -134,20 +140,21 @@ public class EventProducerTest {
         modified.add(rdf.createQuad(Trellis.PreferAudit, rdf.createBlankNode(), type, AS.Create));
 
         producer.clear();
-        final EventProducer event = new EventProducer(producer, identifier, modified);
+        final EventProducer event = new EventProducer(producer, identifier, modified, of(mockParent));
         event.into(existing.stream());
 
         assertEquals(4L, event.getRemoved().count());
         assertEquals(6L, event.getAdded().count());
         assertTrue(event.emit());
         final List<ProducerRecord<String, String>> records = producer.history();
-        assertEquals(2L, records.size());
+        assertEquals(1L, records.size());
         assertEquals(1L, records.stream().filter(r -> r.topic().equals(TOPIC_LDP_CONTAINMENT_ADD)).count());
-        assertEquals(1L, records.stream().filter(r -> r.topic().equals(TOPIC_LDP_MEMBERSHIP_ADD)).count());
     }
 
     @Test
     public void testEventDeletion() throws Exception {
+        when(mockParent.getIdentifier()).thenReturn(parent);
+
         final Literal time = rdf.createLiteral(now().toString(), XSD.dateTime);
         final Literal otherTime = rdf.createLiteral(now().plusSeconds(20).toString(), XSD.dateTime);
         final Dataset existing = rdf.createDataset();
@@ -172,16 +179,15 @@ public class EventProducerTest {
         modified.add(rdf.createQuad(Trellis.PreferAudit, bnode, type, AS.Delete));
 
         producer.clear();
-        final EventProducer event = new EventProducer(producer, identifier, modified, true);
+        final EventProducer event = new EventProducer(producer, identifier, modified, of(mockParent), true);
         event.into(existing.stream());
 
         assertEquals(4L, event.getRemoved().count());
         assertEquals(6L, event.getAdded().count());
         assertTrue(event.emit());
         final List<ProducerRecord<String, String>> records = producer.history();
-        assertEquals(3L, records.size());
+        assertEquals(2L, records.size());
         assertEquals(1L, records.stream().filter(r -> r.topic().equals(TOPIC_LDP_CONTAINMENT_DELETE)).count());
-        assertEquals(1L, records.stream().filter(r -> r.topic().equals(TOPIC_LDP_MEMBERSHIP_DELETE)).count());
         assertEquals(1L, records.stream().filter(r -> r.topic().equals(TOPIC_CACHE)).count());
     }
 
@@ -189,6 +195,7 @@ public class EventProducerTest {
     public void testProducerFailure() throws Exception {
         when(mockProducer.send(any())).thenReturn(mockFuture);
         when(mockFuture.get()).thenThrow(new InterruptedException("Interrupted exception!"));
+        when(mockParent.getIdentifier()).thenReturn(parent);
 
         final Literal time = rdf.createLiteral(now().toString(), XSD.dateTime);
         final Literal otherTime = rdf.createLiteral(now().plusSeconds(20).toString(), XSD.dateTime);
@@ -213,7 +220,7 @@ public class EventProducerTest {
         modified.add(rdf.createQuad(Trellis.PreferServerManaged, identifier, type, LDP.Container));
         modified.add(rdf.createQuad(Trellis.PreferAudit, bnode, type, AS.Delete));
 
-        final EventProducer event = new EventProducer(mockProducer, identifier, modified, true);
+        final EventProducer event = new EventProducer(mockProducer, identifier, modified, of(mockParent), true);
         event.into(existing.stream());
         assertFalse(event.emit());
     }

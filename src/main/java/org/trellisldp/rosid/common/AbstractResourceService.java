@@ -224,18 +224,19 @@ public abstract class AbstractResourceService implements ResourceService {
             return false;
         }
 
-        final EventProducer eventProducer = new EventProducer(producer, identifier, dataset, async);
+        final Optional<Resource> parent = getContainer(identifier).flatMap(this::get);
+        final EventProducer eventProducer = new EventProducer(producer, identifier, dataset, parent, async);
         try (final Stream<? extends Quad> stream = resource.map(Resource::stream).orElseGet(Stream::empty)) {
             eventProducer.into(stream);
         }
 
         final Instant time = now();
-        getContainer(identifier).ifPresent(parent -> {
+        parent.map(Resource::getIdentifier).ifPresent(p -> {
             if (isCreate) {
-                write(parent, empty(), Stream.of(rdf.createQuad(PreferContainment, parent, contains, identifier)),
+                write(p, empty(), Stream.of(rdf.createQuad(PreferContainment, p, contains, identifier)),
                         time, true);
             } else if (isDelete) {
-                write(parent, Stream.of(rdf.createQuad(PreferContainment, parent, contains, identifier)), empty(),
+                write(p, Stream.of(rdf.createQuad(PreferContainment, p, contains, identifier)), empty(),
                         time, true);
             }
         });
