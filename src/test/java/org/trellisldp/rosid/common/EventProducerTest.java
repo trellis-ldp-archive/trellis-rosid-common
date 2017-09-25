@@ -14,6 +14,7 @@
 package org.trellisldp.rosid.common;
 
 import static java.time.Instant.now;
+import static java.util.Optional.empty;
 import static java.util.Optional.of;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -23,6 +24,8 @@ import static org.mockito.Mockito.when;
 import static org.trellisldp.rosid.common.RosidConstants.TOPIC_CACHE;
 import static org.trellisldp.rosid.common.RosidConstants.TOPIC_LDP_CONTAINMENT_ADD;
 import static org.trellisldp.rosid.common.RosidConstants.TOPIC_LDP_CONTAINMENT_DELETE;
+import static org.trellisldp.rosid.common.RosidConstants.TOPIC_LDP_MEMBERSHIP_ADD;
+import static org.trellisldp.rosid.common.RosidConstants.TOPIC_LDP_MEMBERSHIP_DELETE;
 import static org.trellisldp.vocabulary.RDF.type;
 
 import java.util.List;
@@ -49,6 +52,7 @@ import org.trellisldp.vocabulary.AS;
 import org.trellisldp.vocabulary.DC;
 import org.trellisldp.vocabulary.LDP;
 import org.trellisldp.vocabulary.PROV;
+import org.trellisldp.vocabulary.SKOS;
 import org.trellisldp.vocabulary.Trellis;
 import org.trellisldp.vocabulary.XSD;
 
@@ -66,6 +70,7 @@ public class EventProducerTest {
     private final IRI inbox = rdf.createIRI("http://example.org/inbox");
     private final IRI subject = rdf.createIRI("http://example.org/subject");
     private final IRI parent = rdf.createIRI("trellis:repository");
+    private final IRI member = rdf.createIRI("trellis:repository/member");
 
     private final MockProducer<String, String> producer = new MockProducer<>(true,
             new StringSerializer(), new StringSerializer());
@@ -116,6 +121,7 @@ public class EventProducerTest {
     @Test
     public void testEventCreation() throws Exception {
         when(mockParent.getIdentifier()).thenReturn(parent);
+        when(mockParent.getInteractionModel()).thenReturn(LDP.Container);
 
         final Literal time = rdf.createLiteral(now().toString(), XSD.dateTime);
         final Literal otherTime = rdf.createLiteral(now().plusSeconds(20).toString(), XSD.dateTime);
@@ -152,8 +158,146 @@ public class EventProducerTest {
     }
 
     @Test
+    public void testEventCreationDirectContainer() throws Exception {
+        when(mockParent.getIdentifier()).thenReturn(parent);
+        when(mockParent.getInteractionModel()).thenReturn(LDP.DirectContainer);
+        when(mockParent.getMembershipResource()).thenReturn(of(member));
+        when(mockParent.getMemberRelation()).thenReturn(of(DC.subject));
+        when(mockParent.getMemberOfRelation()).thenReturn(empty());
+
+        final Literal time = rdf.createLiteral(now().toString(), XSD.dateTime);
+        final Literal otherTime = rdf.createLiteral(now().plusSeconds(20).toString(), XSD.dateTime);
+        final Dataset existing = rdf.createDataset();
+        existing.add(rdf.createQuad(Trellis.PreferUserManaged, identifier, DC.title, rdf.createLiteral("A title")));
+        existing.add(rdf.createQuad(Trellis.PreferUserManaged, identifier, DC.hasPart, other1));
+        existing.add(rdf.createQuad(Trellis.PreferUserManaged, identifier, DC.modified, time));
+        existing.add(rdf.createQuad(Trellis.PreferUserManaged, identifier, DC.subject, subject));
+        existing.add(rdf.createQuad(Trellis.PreferServerManaged, identifier, type, LDP.RDFSource));
+        existing.add(rdf.createQuad(Trellis.PreferServerManaged, identifier, DC.modified,
+                    rdf.createLiteral(time.toString(), XSD.dateTime)));
+        existing.add(rdf.createQuad(Trellis.PreferAudit, identifier, PROV.wasGeneratedBy, rdf.createBlankNode()));
+
+        final Dataset modified = rdf.createDataset();
+        modified.add(rdf.createQuad(Trellis.PreferUserManaged, identifier, DC.hasPart, other2));
+        modified.add(rdf.createQuad(Trellis.PreferUserManaged, identifier, DC.modified, otherTime));
+        modified.add(rdf.createQuad(Trellis.PreferUserManaged, identifier, DC.subject, subject));
+        modified.add(rdf.createQuad(Trellis.PreferUserManaged, identifier, LDP.inbox, inbox));
+        modified.add(rdf.createQuad(Trellis.PreferUserManaged, identifier, DC.title,
+                    rdf.createLiteral("Better title")));
+        modified.add(rdf.createQuad(Trellis.PreferServerManaged, identifier, type, LDP.Container));
+        modified.add(rdf.createQuad(Trellis.PreferAudit, rdf.createBlankNode(), type, AS.Create));
+
+        producer.clear();
+        final EventProducer event = new EventProducer(producer, identifier, modified, of(mockParent));
+        event.into(existing.stream());
+
+        assertEquals(4L, event.getRemoved().count());
+        assertEquals(6L, event.getAdded().count());
+        assertTrue(event.emit());
+        final List<ProducerRecord<String, String>> records = producer.history();
+        assertEquals(2L, records.size());
+        assertEquals(1L, records.stream().filter(r -> r.topic().equals(TOPIC_LDP_CONTAINMENT_ADD)).count());
+        assertEquals(1L, records.stream().filter(r -> r.topic().equals(TOPIC_LDP_MEMBERSHIP_ADD)).count());
+    }
+
+    @Test
+    public void testEventDeleteDirectContainer() throws Exception {
+        when(mockParent.getIdentifier()).thenReturn(parent);
+        when(mockParent.getInteractionModel()).thenReturn(LDP.DirectContainer);
+        when(mockParent.getMembershipResource()).thenReturn(of(member));
+        when(mockParent.getMemberOfRelation()).thenReturn(of(DC.subject));
+        when(mockParent.getMemberRelation()).thenReturn(empty());
+
+        final Literal time = rdf.createLiteral(now().toString(), XSD.dateTime);
+        final Literal otherTime = rdf.createLiteral(now().plusSeconds(20).toString(), XSD.dateTime);
+
+        final Dataset existing = rdf.createDataset();
+        final BlankNode bnode = rdf.createBlankNode();
+        existing.add(rdf.createQuad(Trellis.PreferUserManaged, identifier, DC.title, rdf.createLiteral("A title")));
+        existing.add(rdf.createQuad(Trellis.PreferUserManaged, identifier, DC.hasPart, other1));
+        existing.add(rdf.createQuad(Trellis.PreferUserManaged, identifier, DC.modified, time));
+        existing.add(rdf.createQuad(Trellis.PreferUserManaged, identifier, DC.subject, subject));
+        existing.add(rdf.createQuad(Trellis.PreferServerManaged, identifier, type, LDP.RDFSource));
+        existing.add(rdf.createQuad(Trellis.PreferServerManaged, identifier, DC.modified,
+                    rdf.createLiteral(time.toString(), XSD.dateTime)));
+        existing.add(rdf.createQuad(Trellis.PreferAudit, identifier, PROV.wasGeneratedBy, rdf.createBlankNode()));
+
+        final Dataset modified = rdf.createDataset();
+        modified.add(rdf.createQuad(Trellis.PreferUserManaged, identifier, DC.title,
+                    rdf.createLiteral("Better title")));
+        modified.add(rdf.createQuad(Trellis.PreferUserManaged, identifier, DC.hasPart, other2));
+        modified.add(rdf.createQuad(Trellis.PreferUserManaged, identifier, DC.modified, otherTime));
+        modified.add(rdf.createQuad(Trellis.PreferUserManaged, identifier, DC.subject, subject));
+        modified.add(rdf.createQuad(Trellis.PreferUserManaged, identifier, LDP.inbox, inbox));
+        modified.add(rdf.createQuad(Trellis.PreferServerManaged, identifier, type, LDP.Container));
+        modified.add(rdf.createQuad(Trellis.PreferAudit, bnode, type, AS.Delete));
+
+        producer.clear();
+        final EventProducer event = new EventProducer(producer, identifier, modified, of(mockParent), true);
+        event.into(existing.stream());
+
+        assertEquals(4L, event.getRemoved().count());
+        assertEquals(6L, event.getAdded().count());
+        assertTrue(event.emit());
+        final List<ProducerRecord<String, String>> records = producer.history();
+        assertEquals(3L, records.size());
+        assertEquals(1L, records.stream().filter(r -> r.topic().equals(TOPIC_LDP_CONTAINMENT_DELETE)).count());
+        assertEquals(1L, records.stream().filter(r -> r.topic().equals(TOPIC_LDP_MEMBERSHIP_DELETE)).count());
+        assertEquals(1L, records.stream().filter(r -> r.topic().equals(TOPIC_CACHE)).count());
+    }
+
+    @Test
+    public void testEventCreationIndirectContainer() throws Exception {
+        when(mockParent.getIdentifier()).thenReturn(parent);
+        when(mockParent.getInteractionModel()).thenReturn(LDP.IndirectContainer);
+        when(mockParent.getMembershipResource()).thenReturn(of(member));
+        when(mockParent.getMemberRelation()).thenReturn(of(SKOS.broader));
+        when(mockParent.getInsertedContentRelation()).thenReturn(of(DC.subject));
+
+        final Literal time = rdf.createLiteral(now().toString(), XSD.dateTime);
+        final Literal otherTime = rdf.createLiteral(now().plusSeconds(20).toString(), XSD.dateTime);
+        final Dataset existing = rdf.createDataset();
+        final BlankNode bnode = rdf.createBlankNode();
+        existing.add(rdf.createQuad(Trellis.PreferUserManaged, identifier, DC.title, rdf.createLiteral("A title")));
+        existing.add(rdf.createQuad(Trellis.PreferUserManaged, identifier, DC.hasPart, other1));
+        existing.add(rdf.createQuad(Trellis.PreferUserManaged, identifier, DC.modified, time));
+        existing.add(rdf.createQuad(Trellis.PreferUserManaged, identifier, DC.subject, subject));
+        existing.add(rdf.createQuad(Trellis.PreferServerManaged, identifier, type, LDP.RDFSource));
+        existing.add(rdf.createQuad(Trellis.PreferServerManaged, identifier, DC.modified,
+                    rdf.createLiteral(time.toString(), XSD.dateTime)));
+        existing.add(rdf.createQuad(Trellis.PreferAudit, identifier, PROV.wasGeneratedBy, rdf.createBlankNode()));
+
+        final Dataset modified = rdf.createDataset();
+        modified.add(rdf.createQuad(Trellis.PreferUserManaged, identifier, DC.hasPart, other2));
+        modified.add(rdf.createQuad(Trellis.PreferUserManaged, identifier, DC.modified, otherTime));
+        modified.add(rdf.createQuad(Trellis.PreferUserManaged, identifier, DC.subject, subject));
+        modified.add(rdf.createQuad(Trellis.PreferUserManaged, identifier, LDP.inbox, inbox));
+        modified.add(rdf.createQuad(Trellis.PreferUserManaged, identifier, DC.title,
+                    rdf.createLiteral("Better title")));
+        modified.add(rdf.createQuad(Trellis.PreferServerManaged, identifier, type, LDP.Container));
+        modified.add(rdf.createQuad(Trellis.PreferAudit, bnode, type, AS.Create));
+        modified.add(rdf.createQuad(Trellis.PreferAudit, bnode, type, PROV.Activity));
+        modified.add(rdf.createQuad(Trellis.PreferAudit, bnode, PROV.wasAssociatedWith,
+                    rdf.createIRI("user:foo")));
+
+        producer.clear();
+        final EventProducer event = new EventProducer(producer, identifier, modified, of(mockParent));
+        event.into(existing.stream());
+
+        assertEquals(4L, event.getRemoved().count());
+        assertEquals(8L, event.getAdded().count());
+        assertTrue(event.emit());
+        final List<ProducerRecord<String, String>> records = producer.history();
+        assertEquals(2L, records.size());
+        assertEquals(1L, records.stream().filter(r -> r.topic().equals(TOPIC_LDP_CONTAINMENT_ADD)).count());
+        assertEquals(1L, records.stream().filter(r -> r.topic().equals(TOPIC_LDP_MEMBERSHIP_ADD)).count());
+    }
+
+
+    @Test
     public void testEventDeletion() throws Exception {
         when(mockParent.getIdentifier()).thenReturn(parent);
+        when(mockParent.getInteractionModel()).thenReturn(LDP.Container);
 
         final Literal time = rdf.createLiteral(now().toString(), XSD.dateTime);
         final Literal otherTime = rdf.createLiteral(now().plusSeconds(20).toString(), XSD.dateTime);
@@ -196,6 +340,7 @@ public class EventProducerTest {
         when(mockProducer.send(any())).thenReturn(mockFuture);
         when(mockFuture.get()).thenThrow(new InterruptedException("Interrupted exception!"));
         when(mockParent.getIdentifier()).thenReturn(parent);
+        when(mockParent.getInteractionModel()).thenReturn(LDP.Container);
 
         final Literal time = rdf.createLiteral(now().toString(), XSD.dateTime);
         final Literal otherTime = rdf.createLiteral(now().plusSeconds(20).toString(), XSD.dateTime);
