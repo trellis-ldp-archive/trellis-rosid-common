@@ -18,6 +18,7 @@ import static org.apache.curator.framework.CuratorFrameworkFactory.newClient;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 import static org.trellisldp.rosid.common.RosidConstants.ZNODE_NAMESPACES;
 
@@ -115,7 +116,10 @@ public class NamespacesTest {
     }
 
     @Test(expected = RuntimeRepositoryException.class)
-    public void testErrorHandler() {
+    public void testErrorHandler() throws Exception {
+        when(mockCache.getClient()).thenReturn(mockCurator);
+        when(mockCurator.getData()).thenReturn(mockDataBuilder);
+        doThrow(Exception.class).when(mockDataBuilder).forPath(ZNODE_NAMESPACES);
         new Namespaces(mockCache);
     }
 
