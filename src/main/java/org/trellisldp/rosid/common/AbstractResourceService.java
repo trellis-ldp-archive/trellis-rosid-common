@@ -29,7 +29,6 @@ import static org.slf4j.LoggerFactory.getLogger;
 import static org.trellisldp.rosid.common.RDFUtils.endedAtQuad;
 import static org.trellisldp.rosid.common.RDFUtils.getParent;
 import static org.trellisldp.rosid.common.RosidConstants.ZNODE_COORDINATION;
-import static org.trellisldp.spi.RDFUtils.TRELLIS_BNODE_PREFIX;
 import static org.trellisldp.spi.RDFUtils.getInstance;
 import static org.trellisldp.spi.RDFUtils.toExternalTerm;
 import static org.trellisldp.vocabulary.AS.Create;
@@ -47,11 +46,9 @@ import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-import org.apache.commons.rdf.api.BlankNode;
 import org.apache.commons.rdf.api.Dataset;
 import org.apache.commons.rdf.api.IRI;
 import org.apache.commons.rdf.api.Quad;
-import org.apache.commons.rdf.api.RDFTerm;
 import org.apache.commons.rdf.api.RDF;
 import org.apache.commons.rdf.api.Triple;
 import org.apache.curator.framework.CuratorFramework;
@@ -253,25 +250,6 @@ public abstract class AbstractResourceService implements ResourceService {
     @Override
     public Optional<IRI> getContainer(final IRI identifier) {
         return getParent(identifier.getIRIString()).map(rdf::createIRI);
-    }
-
-    @Override
-    public RDFTerm skolemize(final RDFTerm term) {
-        if (term instanceof BlankNode) {
-            return rdf.createIRI(TRELLIS_BNODE_PREFIX + ((BlankNode) term).uniqueReference());
-        }
-        return term;
-    }
-
-    @Override
-    public RDFTerm unskolemize(final RDFTerm term) {
-        if (term instanceof IRI) {
-            final String iri = ((IRI) term).getIRIString();
-            if (iri.startsWith(TRELLIS_BNODE_PREFIX)) {
-                return rdf.createBlankNode(iri.substring(TRELLIS_BNODE_PREFIX.length()));
-            }
-        }
-        return term;
     }
 
     @Override
