@@ -33,8 +33,6 @@ import static org.trellisldp.spi.RDFUtils.getInstance;
 import static org.trellisldp.spi.RDFUtils.toExternalTerm;
 import static org.trellisldp.vocabulary.AS.Create;
 import static org.trellisldp.vocabulary.AS.Delete;
-import static org.trellisldp.vocabulary.LDP.PreferContainment;
-import static org.trellisldp.vocabulary.LDP.contains;
 import static org.trellisldp.vocabulary.RDF.type;
 import static org.trellisldp.vocabulary.Trellis.PreferAudit;
 
@@ -228,16 +226,6 @@ public abstract class AbstractResourceService implements ResourceService {
         }
 
         final Instant time = now();
-        parent.map(Resource::getIdentifier).ifPresent(p -> {
-            if (isCreate) {
-                write(p, empty(), Stream.of(rdf.createQuad(PreferContainment, p, contains, identifier)),
-                        time, true);
-            } else if (isDelete) {
-                write(p, Stream.of(rdf.createQuad(PreferContainment, p, contains, identifier)), empty(),
-                        time, true);
-            }
-        });
-
         if (!write(identifier, eventProducer.getRemoved(),
                     concat(eventProducer.getAdded(), endedAtQuad(identifier, dataset, time)), time, false)) {
             LOGGER.error("Could not write data to persistence layer!");
