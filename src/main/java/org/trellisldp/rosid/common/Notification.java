@@ -17,7 +17,7 @@ import static java.time.Instant.now;
 import static java.util.Optional.of;
 import static java.util.UUID.randomUUID;
 import static java.util.stream.Collectors.toList;
-import static org.trellisldp.spi.RDFUtils.getInstance;
+import static org.trellisldp.api.RDFUtils.getInstance;
 import static org.trellisldp.vocabulary.RDF.type;
 
 import java.time.Instant;
@@ -33,7 +33,7 @@ import org.apache.commons.rdf.api.Quad;
 import org.apache.commons.rdf.api.RDF;
 import org.apache.commons.rdf.api.Triple;
 
-import org.trellisldp.spi.Event;
+import org.trellisldp.api.Event;
 import org.trellisldp.vocabulary.LDP;
 import org.trellisldp.vocabulary.PROV;
 import org.trellisldp.vocabulary.Trellis;

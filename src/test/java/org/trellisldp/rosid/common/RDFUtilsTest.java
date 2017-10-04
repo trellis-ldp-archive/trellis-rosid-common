@@ -24,7 +24,7 @@ import static org.trellisldp.rosid.common.RDFUtils.endedAtQuad;
 import static org.trellisldp.rosid.common.RDFUtils.getParent;
 import static org.trellisldp.rosid.common.RDFUtils.hasObjectIRI;
 import static org.trellisldp.rosid.common.RDFUtils.hasSubjectIRI;
-import static org.trellisldp.spi.RDFUtils.getInstance;
+import static org.trellisldp.api.RDFUtils.getInstance;
 
 import java.time.Instant;
 import java.util.List;

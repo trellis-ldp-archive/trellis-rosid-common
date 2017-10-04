@@ -40,8 +40,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
-import org.trellisldp.spi.NamespaceService;
-import org.trellisldp.spi.RuntimeRepositoryException;
+import org.trellisldp.api.NamespaceService;
+import org.trellisldp.api.RuntimeRepositoryException;
 import org.trellisldp.vocabulary.JSONLD;
 import org.trellisldp.vocabulary.LDP;
 

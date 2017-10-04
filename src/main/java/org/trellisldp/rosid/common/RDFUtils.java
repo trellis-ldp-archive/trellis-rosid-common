@@ -41,7 +41,7 @@ import org.apache.commons.rdf.jena.JenaRDF;
 import org.apache.jena.riot.RDFParser;
 import org.apache.jena.sparql.core.DatasetGraph;
 import org.slf4j.Logger;
-import org.trellisldp.spi.RuntimeRepositoryException;
+import org.trellisldp.api.RuntimeRepositoryException;
 
 /**
  * @author acoburn

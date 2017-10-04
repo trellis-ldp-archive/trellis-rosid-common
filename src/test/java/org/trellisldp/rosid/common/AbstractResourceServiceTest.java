@@ -35,7 +35,7 @@ import static org.trellisldp.rosid.common.RosidConstants.ZNODE_COORDINATION;
 import static org.trellisldp.vocabulary.RDF.type;
 
 import org.trellisldp.api.Resource;
-import org.trellisldp.spi.ResourceService;
+import org.trellisldp.api.ResourceService;
 
 import java.time.Instant;
 import java.util.HashSet;
@@ -68,8 +68,8 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
-import org.trellisldp.spi.RuntimeRepositoryException;
-import org.trellisldp.spi.EventService;
+import org.trellisldp.api.EventService;
+import org.trellisldp.api.RuntimeRepositoryException;
 import org.trellisldp.vocabulary.AS;
 import org.trellisldp.vocabulary.DC;
 import org.trellisldp.vocabulary.LDP;

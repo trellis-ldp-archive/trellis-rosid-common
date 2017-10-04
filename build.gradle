@@ -30,8 +30,7 @@ ext {
     license = 'Apache 2'
 
     /* Dependencies */
-    trellisApiVersion = '0.1.1'
-    trellisSpiVersion = '0.1.3'
+    trellisApiVersion = '0.2.0'
     trellisVocabularyVersion = '0.1.0'
     commonsCodecVersion = '1.10'
     commonsIoVersion = '2.5'
@@ -61,7 +60,6 @@ dependencies {
     api group: 'org.apache.curator', name: 'curator-recipes', version: curatorVersion
     api group: 'org.apache.servicemix.bundles', name: 'org.apache.servicemix.bundles.kafka-clients', version: kafkaVersion
     api group: 'org.trellisldp', name: 'trellis-api', version: trellisApiVersion
-    api group: 'org.trellisldp', name: 'trellis-spi', version: trellisSpiVersion
 
     implementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: jacksonVersion
     implementation group: 'com.fasterxml.jackson.datatype', name: 'jackson-datatype-jsr310', version: jacksonVersion

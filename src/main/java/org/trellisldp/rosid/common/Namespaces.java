@@ -35,8 +35,8 @@ import org.apache.commons.io.IOUtils;
 import org.apache.curator.framework.recipes.cache.NodeCache;
 import org.apache.zookeeper.KeeperException.NoNodeException;
 import org.slf4j.Logger;
-import org.trellisldp.spi.NamespaceService;
-import org.trellisldp.spi.RuntimeRepositoryException;
+import org.trellisldp.api.NamespaceService;
+import org.trellisldp.api.RuntimeRepositoryException;
 
 /**
  * @author acoburn
