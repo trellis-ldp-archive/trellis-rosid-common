@@ -37,7 +37,6 @@ import static org.trellisldp.vocabulary.RDF.type;
 import static org.trellisldp.vocabulary.Trellis.PreferAudit;
 
 import java.time.Instant;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -49,7 +48,6 @@ import org.apache.commons.rdf.api.IRI;
 import org.apache.commons.rdf.api.Quad;
 import org.apache.commons.rdf.api.RDF;
 import org.apache.commons.rdf.api.RDFTerm;
-import org.apache.commons.rdf.api.Triple;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.locks.InterProcessLock;
 import org.apache.curator.framework.recipes.locks.InterProcessSemaphoreMutex;
@@ -138,15 +136,12 @@ public abstract class AbstractResourceService implements ResourceService {
     protected abstract Stream<IRI> tryPurge(final IRI identifier);
 
     @Override
-    public <T extends RDFTerm> T toInternal(final T term) {
+    public <T extends RDFTerm> T toInternal(final T term, final String baseUrl) {
         if (term instanceof IRI) {
             final String iri = ((IRI) term).getIRIString();
-            final Optional<Map.Entry<String, String>> partition = partitionUrls.entrySet().stream()
-                .filter(e -> iri.startsWith(e.getValue() + e.getKey())).findFirst();
-            if (partition.isPresent()) {
+            if (iri.startsWith(baseUrl)) {
                 @SuppressWarnings("unchecked")
-                final T ext = (T) rdf.createIRI(TRELLIS_PREFIX + partition.get().getKey() +
-                        iri.substring(partition.get().getKey().length() + partition.get().getValue().length()));
+                final T ext = (T) rdf.createIRI(TRELLIS_PREFIX + iri.substring(baseUrl.length()));
                 return ext;
             }
         }
@@ -154,13 +149,13 @@ public abstract class AbstractResourceService implements ResourceService {
     }
 
     @Override
-    public <T extends RDFTerm> T toExternal(final T term) {
+    public <T extends RDFTerm> T toExternal(final T term, final String baseUrl) {
         if (term instanceof IRI) {
             final String iri = ((IRI) term).getIRIString();
             if (iri.startsWith(TRELLIS_PREFIX)) {
                 final String partition = iri.substring(TRELLIS_PREFIX.length()).split("/")[0];
                 @SuppressWarnings("unchecked")
-                final T ext = (T) rdf.createIRI(partitionUrls.get(partition) + iri.substring(TRELLIS_PREFIX.length()));
+                final T ext = (T) rdf.createIRI(baseUrl + iri.substring(TRELLIS_PREFIX.length()));
                 return ext;
             }
         }
@@ -190,7 +185,7 @@ public abstract class AbstractResourceService implements ResourceService {
 
         if (status && nonNull(notifications)) {
             final String baseUrl = partitionUrls.get(identifier.getIRIString().split(":", 2)[1].split("/")[0]);
-            notifications.emit(new Notification(toExternal(identifier).getIRIString(), dataset));
+            notifications.emit(new Notification(toExternal(identifier, baseUrl).getIRIString(), dataset));
         }
 
         return status;
@@ -269,15 +264,6 @@ public abstract class AbstractResourceService implements ResourceService {
     @Override
     public Optional<IRI> getContainer(final IRI identifier) {
         return getParent(identifier.getIRIString()).map(rdf::createIRI);
-    }
-
-    @Override
-    public Stream<Quad> export(final String partition, final Collection<IRI> graphNames) {
-        return list(partition).map(Triple::getSubject).map(x -> (IRI) x)
-            // TODO - JDK9 optional to stream
-            .flatMap(id -> get(id).map(Stream::of).orElseGet(Stream::empty))
-            .flatMap(resource -> resource.stream(graphNames).map(q ->
-                        rdf.createQuad(resource.getIdentifier(), q.getSubject(), q.getPredicate(), q.getObject())));
     }
 
     @Override
