@@ -26,7 +26,6 @@ import static java.util.stream.Stream.empty;
 import static org.apache.commons.codec.digest.DigestUtils.md5Hex;
 import static org.apache.curator.utils.ZKPaths.PATH_SEPARATOR;
 import static org.slf4j.LoggerFactory.getLogger;
-import static org.trellisldp.api.RDFUtils.TRELLIS_PREFIX;
 import static org.trellisldp.api.RDFUtils.getInstance;
 import static org.trellisldp.rosid.common.RDFUtils.endedAtQuad;
 import static org.trellisldp.rosid.common.RDFUtils.getParent;
@@ -47,7 +46,6 @@ import org.apache.commons.rdf.api.Dataset;
 import org.apache.commons.rdf.api.IRI;
 import org.apache.commons.rdf.api.Quad;
 import org.apache.commons.rdf.api.RDF;
-import org.apache.commons.rdf.api.RDFTerm;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.locks.InterProcessLock;
 import org.apache.curator.framework.recipes.locks.InterProcessSemaphoreMutex;
@@ -134,32 +132,6 @@ public abstract class AbstractResourceService implements ResourceService {
      * @return a stream of binary
      */
     protected abstract Stream<IRI> tryPurge(final IRI identifier);
-
-    @Override
-    public <T extends RDFTerm> T toInternal(final T term, final String baseUrl) {
-        if (term instanceof IRI) {
-            final String iri = ((IRI) term).getIRIString();
-            if (iri.startsWith(baseUrl)) {
-                @SuppressWarnings("unchecked")
-                final T ext = (T) rdf.createIRI(TRELLIS_PREFIX + iri.substring(baseUrl.length()));
-                return ext;
-            }
-        }
-        return term;
-    }
-
-    @Override
-    public <T extends RDFTerm> T toExternal(final T term, final String baseUrl) {
-        if (term instanceof IRI) {
-            final String iri = ((IRI) term).getIRIString();
-            if (iri.startsWith(TRELLIS_PREFIX)) {
-                @SuppressWarnings("unchecked")
-                final T ext = (T) rdf.createIRI(baseUrl + iri.substring(TRELLIS_PREFIX.length()));
-                return ext;
-            }
-        }
-        return term;
-    }
 
     @Override
     public Boolean put(final IRI identifier, final Dataset dataset) {
