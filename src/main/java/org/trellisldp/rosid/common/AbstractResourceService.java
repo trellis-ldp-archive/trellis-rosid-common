@@ -153,7 +153,6 @@ public abstract class AbstractResourceService implements ResourceService {
         if (term instanceof IRI) {
             final String iri = ((IRI) term).getIRIString();
             if (iri.startsWith(TRELLIS_PREFIX)) {
-                final String partition = iri.substring(TRELLIS_PREFIX.length()).split("/")[0];
                 @SuppressWarnings("unchecked")
                 final T ext = (T) rdf.createIRI(baseUrl + iri.substring(TRELLIS_PREFIX.length()));
                 return ext;
