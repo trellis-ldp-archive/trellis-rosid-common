@@ -170,12 +170,6 @@ public class AbstractResourceServiceTest {
         }
 
         @Override
-        @SuppressWarnings("deprecation")
-        public Stream<Triple> list(final String partition) {
-            throw new UnsupportedOperationException("list is not implemented");
-        }
-
-        @Override
         public Stream<Triple> scan(final String partition) {
             return asList(rdf.createTriple(rdf.createIRI("trellis:" + partition + "/existing"), type, LDP.Container))
                 .stream();
