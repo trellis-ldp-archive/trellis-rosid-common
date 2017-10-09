@@ -42,6 +42,7 @@ ext {
     jenaVersion = '3.4.0'
 
     /* Testing */
+    awaitilityVersion = '3.0.0'
     junitVersion = '4.12'
     mockitoVersion = '2.10.0'
     logbackVersion = '1.2.3'
@@ -74,6 +75,7 @@ dependencies {
     testImplementation group: 'junit', name: 'junit', version: junitVersion
     testImplementation group: 'org.apache.curator', name: 'curator-test', version: curatorVersion
     testImplementation group: 'org.mockito', name: 'mockito-core', version: mockitoVersion
+    testImplementation group: 'org.awaitility', name: 'awaitility', version: awaitilityVersion
 
     buildToolsConfig 'org.trellisldp:trellis-build-tools:0.2.0'
 }

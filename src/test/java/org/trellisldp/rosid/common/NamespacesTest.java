@@ -14,8 +14,10 @@
 package org.trellisldp.rosid.common;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.curator.framework.CuratorFrameworkFactory.newClient;
 import static org.apache.curator.utils.ZKPaths.PATH_SEPARATOR;
+import static org.awaitility.Awaitility.await;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -108,7 +110,7 @@ public class NamespacesTest {
         assertEquals("jsonld", svc2.getPrefix(JSONLD.URI).get());
 
         final Namespaces svc3 = new Namespaces(zk, cache);
-        assertEquals(3, svc3.getNamespaces().size());
+        await().atMost(5, SECONDS).until(() -> 3 == svc3.getNamespaces().size());
         assertEquals(JSONLD.URI, svc3.getNamespace("jsonld").get());
         assertFalse(svc3.setPrefix("jsonld", JSONLD.URI));
     }
