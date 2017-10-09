@@ -13,11 +13,14 @@
  */
 package org.trellisldp.rosid.common;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Collections.unmodifiableMap;
 import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
 import static java.util.Optional.of;
 import static java.util.Optional.ofNullable;
+import static java.util.stream.Collectors.toMap;
+import static org.apache.curator.utils.ZKPaths.PATH_SEPARATOR;
 import static org.slf4j.LoggerFactory.getLogger;
 import static org.trellisldp.rosid.common.RosidConstants.ZNODE_NAMESPACES;
 
@@ -32,8 +35,9 @@ import java.util.Map;
 import java.util.Optional;
 
 import org.apache.commons.io.IOUtils;
-import org.apache.curator.framework.recipes.cache.NodeCache;
-import org.apache.zookeeper.KeeperException.NoNodeException;
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.recipes.cache.ChildData;
+import org.apache.curator.framework.recipes.cache.TreeCache;
 import org.slf4j.Logger;
 import org.trellisldp.api.NamespaceService;
 import org.trellisldp.api.RuntimeRepositoryException;
@@ -47,28 +51,37 @@ public class Namespaces implements NamespaceService {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
-    private final NodeCache cache;
+    private final TreeCache cache;
+
+    private final CuratorFramework client;
 
     private Map<String, String> data = new HashMap<>();
 
     /**
      * Create a zookeeper-based namespace service
-     * @param cache the nodecache
+     * @param client the curator client
+     * @param cache the treecache
      */
-    public Namespaces(final NodeCache cache) {
-        this(cache, null);
+    public Namespaces(final CuratorFramework client, final TreeCache cache) {
+        this(client, cache, null);
     }
 
     /**
      * Create a zookeeper-based namespace service
-     * @param cache the nodecache
+     * @param client the curator client
+     * @param cache the treecache
      * @param filePath the file
      */
-    public Namespaces(final NodeCache cache, final String filePath) {
-        requireNonNull(cache, "NodeCache may not be null!");
+    public Namespaces(final CuratorFramework client, final TreeCache cache, final String filePath) {
+        requireNonNull(cache, "TreeCache may not be null!");
+        this.client = client;
         this.cache = cache;
         try {
-            this.cache.getListenable().addListener(() -> data = read(cache.getCurrentData().getData()));
+            this.client.create().orSetData().forPath(ZNODE_NAMESPACES);
+            this.cache.getListenable().addListener((c, e) -> {
+                final Map<String, ChildData> tree = cache.getCurrentChildren(ZNODE_NAMESPACES);
+                readTree(tree).forEach(data::put);
+            });
             this.data = init(filePath);
         } catch (final Exception ex) {
             LOGGER.error("Could not create a zk node cache: {}", ex);
@@ -99,7 +112,7 @@ public class Namespaces implements NamespaceService {
 
         data.put(prefix, namespace);
         try {
-            cache.getClient().create().orSetData().forPath(ZNODE_NAMESPACES, write(data));
+            client.create().orSetData().forPath(ZNODE_NAMESPACES + PATH_SEPARATOR + prefix, namespace.getBytes(UTF_8));
             return true;
         } catch (final Exception ex) {
             LOGGER.error("Unable to set data: {}", ex.getMessage());
@@ -107,49 +120,38 @@ public class Namespaces implements NamespaceService {
         return false;
     }
 
-    private static byte[] write(final Map<String, String> data) {
-       try {
-           return MAPPER.writeValueAsBytes(data);
-       } catch (final IOException ex) {
-            LOGGER.error("Unable to serialize data: {}", ex.getMessage());
-       }
-       return new byte[0];
-    }
-
     private Map<String, String> init(final String filePath) throws Exception {
         if (nonNull(filePath)) {
             try (final FileInputStream input = new FileInputStream(new File(filePath))) {
                 // TODO - JDK9 InputStream::readAllBytes
-                final byte[] bytes = IOUtils.toByteArray(input);
-                final Map<String, String> ns = read(bytes);
-                cache.getClient().create().orSetData().forPath(ZNODE_NAMESPACES, bytes);
+                final Map<String, String> ns = read(IOUtils.toByteArray(input));
+                for (final Map.Entry<String, String> entry : ns.entrySet()) {
+                    client.create().orSetData().forPath(ZNODE_NAMESPACES + PATH_SEPARATOR + entry.getKey(),
+                            entry.getValue().getBytes(UTF_8));
+                }
                 return ns;
             } catch (final IOException ex) {
                 LOGGER.warn("Unable to read provided file: {}", ex.getMessage());
             }
         }
-        try {
-            return read(cache.getClient().getData().forPath(ZNODE_NAMESPACES));
-        } catch (final NoNodeException ex) {
-            LOGGER.warn("No namespace data stored in ZooKeeper: {}", ex.getMessage());
-            return new HashMap<>();
-        }
+        return readTree(cache.getCurrentChildren(ZNODE_NAMESPACES));
     }
 
-    private static Map<String, String> read(final byte[] data) {
+    private static Map<String, String> readTree(final Map<String, ChildData> data) {
+        return data.entrySet().stream().collect(toMap(Map.Entry::getKey,
+                    e -> new String(e.getValue().getData(), UTF_8)));
+    }
+
+    private static Map<String, String> read(final byte[] data) throws IOException {
         final Map<String, String> namespaces = new HashMap<>();
-        try {
-            of(MAPPER.readTree(data)).filter(JsonNode::isObject).ifPresent(json ->
-                json.fields().forEachRemaining(node -> {
-                    if (node.getValue().isTextual()) {
-                        namespaces.put(node.getKey(), node.getValue().textValue());
-                    } else {
-                        LOGGER.warn("Ignoring non-textual node at key: {}", node.getKey());
-                    }
-                }));
-        } catch (final IOException ex) {
-            LOGGER.error("Could not read namespace data: {}", ex.getMessage());
-        }
+        of(MAPPER.readTree(data)).filter(JsonNode::isObject).ifPresent(json ->
+            json.fields().forEachRemaining(node -> {
+                if (node.getValue().isTextual()) {
+                    namespaces.put(node.getKey(), node.getValue().textValue());
+                } else {
+                    LOGGER.warn("Ignoring non-textual node at key: {}", node.getKey());
+                }
+            }));
         return namespaces;
     }
 }

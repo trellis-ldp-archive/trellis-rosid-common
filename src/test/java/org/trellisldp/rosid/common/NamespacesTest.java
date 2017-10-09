@@ -15,6 +15,7 @@ package org.trellisldp.rosid.common;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.curator.framework.CuratorFrameworkFactory.newClient;
+import static org.apache.curator.utils.ZKPaths.PATH_SEPARATOR;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -22,16 +23,16 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 import static org.trellisldp.rosid.common.RosidConstants.ZNODE_NAMESPACES;
 
-import java.io.File;
 import java.net.URL;
 import java.math.BigInteger;
 import java.security.SecureRandom;
 
 import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.api.GetDataBuilder;
+import org.apache.curator.framework.api.CreateBuilder;
+import org.apache.curator.framework.api.CreateBuilder2;
 import org.apache.curator.framework.listen.ListenerContainer;
-import org.apache.curator.framework.recipes.cache.NodeCache;
-import org.apache.curator.framework.recipes.cache.NodeCacheListener;
+import org.apache.curator.framework.recipes.cache.TreeCache;
+import org.apache.curator.framework.recipes.cache.TreeCacheListener;
 import org.apache.curator.retry.RetryNTimes;
 import org.apache.curator.test.TestingServer;
 import org.junit.Before;
@@ -58,13 +59,16 @@ public class NamespacesTest {
     private static CuratorFramework mockCurator;
 
     @Mock
-    private NodeCache mockCache;
+    private TreeCache mockCache;
 
     @Mock
-    private ListenerContainer<NodeCacheListener> mockListenable;
+    private ListenerContainer<TreeCacheListener> mockListenable;
 
     @Mock
-    private GetDataBuilder mockDataBuilder;
+    private CreateBuilder mockCreateBuilder;
+
+    @Mock
+    private CreateBuilder2 mockCreateBuilder2;
 
     @BeforeClass
     public static void setUp() throws Exception {
@@ -73,70 +77,54 @@ public class NamespacesTest {
 
     @Before
     public void setUpMocks() throws Exception {
-        when(mockCache.getClient()).thenReturn(mockCurator);
+        when(mockCurator.create()).thenReturn(mockCreateBuilder);
+        when(mockCreateBuilder.orSetData()).thenReturn(mockCreateBuilder2);
         when(mockCache.getListenable()).thenReturn(mockListenable);
     }
 
     @Test
-    public void testReadNamespaces() throws Exception {
+    public void testNamespaces() throws Exception {
         final URL res = Namespaces.class.getResource(nsDoc);
-        final NamespaceService service = new Namespaces(getZkCache(curator.getConnectString()), res.getPath());
+        final CuratorFramework zk = newClient(curator.getConnectString(), new RetryNTimes(10, 1000));
+        zk.start();
+        final TreeCache cache = new TreeCache(zk, ZNODE_NAMESPACES);
+        cache.start();
 
-        assertEquals(2, service.getNamespaces().size());
-        assertEquals(LDP.URI, service.getNamespace("ldp").get());
-        assertEquals("ldp", service.getPrefix(LDP.URI).get());
-    }
+        final NamespaceService svc1 = new Namespaces(zk, cache, res.getPath() + randomFilename());
 
-    @Test
-    public void testReadNamespacesNoFile() throws Exception {
-        final URL res = Namespaces.class.getResource(nsDoc);
-        final NamespaceService service = new Namespaces(getZkCache(curator.getConnectString()),
-                res.getPath() + "Im-gonna-go-to-London.txt");
+        assertEquals(0, svc1.getNamespaces().size());
 
-        assertEquals(0, service.getNamespaces().size());
-    }
+        final NamespaceService svc2 = new Namespaces(zk, cache, res.getPath());
 
-    @Test
-    public void testWriteNamespaces() throws Exception {
-        final File file = new File(Namespaces.class.getResource(nsDoc).getPath());
-        final String filename = file.getParent() + "/" + randomFilename();
-        final Namespaces svc1 = new Namespaces(getZkCache(curator.getConnectString()), file.getPath());
-        assertEquals(2, svc1.getNamespaces().size());
-        assertFalse(svc1.getNamespace("jsonld").isPresent());
-        assertFalse(svc1.getPrefix(JSONLD.URI).isPresent());
-        assertTrue(svc1.setPrefix("jsonld", JSONLD.URI));
-        assertEquals(3, svc1.getNamespaces().size());
-        assertEquals(JSONLD.URI, svc1.getNamespace("jsonld").get());
-        assertEquals("jsonld", svc1.getPrefix(JSONLD.URI).get());
+        assertEquals(2, svc2.getNamespaces().size());
+        assertEquals(LDP.URI, svc2.getNamespace("ldp").get());
+        assertEquals("ldp", svc2.getPrefix(LDP.URI).get());
 
-        final Namespaces svc2 = new Namespaces(getZkCache(curator.getConnectString()));
+        assertFalse(svc2.getNamespace("jsonld").isPresent());
+        assertFalse(svc2.getPrefix(JSONLD.URI).isPresent());
+        assertTrue(svc2.setPrefix("jsonld", JSONLD.URI));
         assertEquals(3, svc2.getNamespaces().size());
         assertEquals(JSONLD.URI, svc2.getNamespace("jsonld").get());
-        assertFalse(svc2.setPrefix("jsonld", JSONLD.URI));
+        assertEquals("jsonld", svc2.getPrefix(JSONLD.URI).get());
+
+        final Namespaces svc3 = new Namespaces(zk, cache);
+        assertEquals(3, svc3.getNamespaces().size());
+        assertEquals(JSONLD.URI, svc3.getNamespace("jsonld").get());
+        assertFalse(svc3.setPrefix("jsonld", JSONLD.URI));
     }
 
     @Test(expected = RuntimeRepositoryException.class)
     public void testErrorHandler() throws Exception {
-        when(mockCache.getClient()).thenReturn(mockCurator);
-        when(mockCurator.getData()).thenReturn(mockDataBuilder);
-        doThrow(Exception.class).when(mockDataBuilder).forPath(ZNODE_NAMESPACES);
-        new Namespaces(mockCache);
+        doThrow(Exception.class).when(mockCache).getCurrentChildren(ZNODE_NAMESPACES);
+        new Namespaces(mockCurator, mockCache);
     }
 
     @Test
     public void testError2() throws Exception {
-        when(mockCurator.getData()).thenReturn(mockDataBuilder);
-        when(mockDataBuilder.forPath(ZNODE_NAMESPACES)).thenReturn("{}".getBytes(UTF_8));
-        final Namespaces ns = new Namespaces(mockCache);
+        doThrow(Exception.class).when(mockCreateBuilder2)
+            .forPath(ZNODE_NAMESPACES + PATH_SEPARATOR + "foo", "bar".getBytes(UTF_8));
+        final Namespaces ns = new Namespaces(mockCurator, mockCache);
         assertFalse(ns.setPrefix("foo", "bar"));
-    }
-
-    private static NodeCache getZkCache(final String connectString) throws Exception {
-        final CuratorFramework zk = newClient(connectString, new RetryNTimes(10, 1000));
-        zk.start();
-        final NodeCache cache = new NodeCache(zk, ZNODE_NAMESPACES);
-        cache.start();
-        return cache;
     }
 
     private static String randomFilename() {
@@ -144,5 +132,4 @@ public class NamespacesTest {
         final String filename = new BigInteger(50, random).toString(32);
         return filename + ".json";
     }
-
 }
