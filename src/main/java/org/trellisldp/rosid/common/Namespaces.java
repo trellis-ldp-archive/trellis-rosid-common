@@ -14,6 +14,7 @@
 package org.trellisldp.rosid.common;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.Collections.emptyMap;
 import static java.util.Collections.unmodifiableMap;
 import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
@@ -82,7 +83,7 @@ public class Namespaces implements NamespaceService {
                 final Map<String, ChildData> tree = cache.getCurrentChildren(ZNODE_NAMESPACES);
                 readTree(tree).forEach(data::put);
             });
-            this.data = init(filePath);
+            init(filePath).forEach(data::put);
         } catch (final Exception ex) {
             LOGGER.error("Could not create a zk node cache: {}", ex);
             throw new RuntimeRepositoryException(ex);
@@ -121,6 +122,7 @@ public class Namespaces implements NamespaceService {
     }
 
     private Map<String, String> init(final String filePath) throws Exception {
+        final Map<String, String> namespaces = new HashMap<>();
         if (nonNull(filePath)) {
             try (final FileInputStream input = new FileInputStream(new File(filePath))) {
                 // TODO - JDK9 InputStream::readAllBytes
@@ -128,18 +130,22 @@ public class Namespaces implements NamespaceService {
                 for (final Map.Entry<String, String> entry : ns.entrySet()) {
                     client.create().orSetData().forPath(ZNODE_NAMESPACES + PATH_SEPARATOR + entry.getKey(),
                             entry.getValue().getBytes(UTF_8));
+                    namespaces.put(entry.getKey(), entry.getValue());
                 }
-                return ns;
             } catch (final IOException ex) {
                 LOGGER.warn("Unable to read provided file: {}", ex.getMessage());
             }
         }
-        return readTree(cache.getCurrentChildren(ZNODE_NAMESPACES));
+        readTree(cache.getCurrentChildren(ZNODE_NAMESPACES)).forEach(namespaces::put);
+        return namespaces;
     }
 
     private static Map<String, String> readTree(final Map<String, ChildData> data) {
-        return data.entrySet().stream().collect(toMap(Map.Entry::getKey,
-                    e -> new String(e.getValue().getData(), UTF_8)));
+        if (nonNull(data)) {
+            return data.entrySet().stream()
+                .collect(toMap(Map.Entry::getKey, e -> new String(e.getValue().getData(), UTF_8)));
+        }
+        return emptyMap();
     }
 
     private static Map<String, String> read(final byte[] data) throws IOException {
