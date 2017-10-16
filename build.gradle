@@ -36,7 +36,7 @@ ext {
     commonsIoVersion = '2.5'
     commonsRdfVersion = '0.3.0-incubating'
     curatorVersion = '4.0.0'
-    jacksonVersion = '2.9.1'
+    jacksonVersion = '2.9.2'
     kafkaVersion = '0.11.0.0_1'
     slf4jVersion = '1.7.25'
     jenaVersion = '3.4.0'
