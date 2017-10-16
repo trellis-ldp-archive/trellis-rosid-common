@@ -12,7 +12,7 @@
  * limitations under the License.
  */
 /**
- * Rosid: common classes for rosid-based implementations of the Trellis API
+ * Trellis Rosid: common classes for rosid-based implementations of the Trellis API
  *
  * <p>This package provides common abstractions for Rosid-based implementations
  * of the Trellis API.</p>
