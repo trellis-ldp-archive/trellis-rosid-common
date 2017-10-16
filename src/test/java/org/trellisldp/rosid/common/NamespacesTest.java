@@ -117,7 +117,7 @@ public class NamespacesTest {
 
     @Test(expected = RuntimeRepositoryException.class)
     public void testErrorHandler() throws Exception {
-        doThrow(Exception.class).when(mockCache).getCurrentChildren(ZNODE_NAMESPACES);
+        doThrow(RuntimeException.class).when(mockCache).getCurrentChildren(ZNODE_NAMESPACES);
         new Namespaces(mockCurator, mockCache);
     }
 
