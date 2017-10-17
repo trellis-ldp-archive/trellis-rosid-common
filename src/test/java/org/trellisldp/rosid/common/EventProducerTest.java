@@ -16,11 +16,12 @@ package org.trellisldp.rosid.common;
 import static java.time.Instant.now;
 import static java.util.Optional.empty;
 import static java.util.Optional.of;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
+import static org.mockito.MockitoAnnotations.initMocks;
 import static org.trellisldp.rosid.common.RosidConstants.TOPIC_CACHE;
 import static org.trellisldp.rosid.common.RosidConstants.TOPIC_LDP_CONTAINMENT_ADD;
 import static org.trellisldp.rosid.common.RosidConstants.TOPIC_LDP_CONTAINMENT_DELETE;
@@ -43,10 +44,11 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.serialization.StringSerializer;
 
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
 import org.trellisldp.api.Resource;
 import org.trellisldp.vocabulary.AS;
 import org.trellisldp.vocabulary.DC;
@@ -59,7 +61,7 @@ import org.trellisldp.vocabulary.XSD;
 /**
  * @author acoburn
  */
-@RunWith(MockitoJUnitRunner.class)
+@RunWith(JUnitPlatform.class)
 public class EventProducerTest {
 
     private static final RDF rdf = new JenaRDF();
@@ -83,6 +85,11 @@ public class EventProducerTest {
 
     @Mock
     private Resource mockParent;
+
+    @BeforeEach
+    public void setUpTests() {
+        initMocks(this);
+    }
 
     @Test
     public void testEventProducer() throws Exception {

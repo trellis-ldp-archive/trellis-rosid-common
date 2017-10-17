@@ -22,15 +22,17 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.stream.Collectors.toList;
 import static org.apache.commons.codec.digest.DigestUtils.md5Hex;
 import static org.apache.curator.framework.CuratorFrameworkFactory.newClient;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
+import static org.mockito.MockitoAnnotations.initMocks;
 import static org.trellisldp.rosid.common.RosidConstants.ZNODE_COORDINATION;
 import static org.trellisldp.vocabulary.RDF.type;
 
@@ -61,13 +63,14 @@ import org.apache.curator.retry.RetryNTimes;
 import org.apache.curator.test.TestingServer;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.apache.kafka.clients.producer.MockProducer;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
 import org.trellisldp.api.EventService;
 import org.trellisldp.api.RuntimeRepositoryException;
 import org.trellisldp.vocabulary.AS;
@@ -78,7 +81,7 @@ import org.trellisldp.vocabulary.Trellis;
 /**
  * @author acoburn
  */
-@RunWith(MockitoJUnitRunner.class)
+@RunWith(JUnitPlatform.class)
 public class AbstractResourceServiceTest {
 
     private static final RDF rdf = new JenaRDF();
@@ -103,6 +106,11 @@ public class AbstractResourceServiceTest {
 
     @Mock
     private InterProcessLock mockLock;
+
+    @BeforeEach
+    public void setUpTests() {
+        initMocks(this);
+    }
 
     @Captor
     private ArgumentCaptor<Notification> notificationCaptor;
@@ -182,7 +190,7 @@ public class AbstractResourceServiceTest {
         return zk;
     }
 
-    @BeforeClass
+    @BeforeAll
     public static void setUp() throws Exception {
         curator = new TestingServer(true);
     }
@@ -265,10 +273,11 @@ public class AbstractResourceServiceTest {
         verify(mockEventService, times(2)).emit(any(Notification.class));
     }
 
-    @Test(expected = RuntimeRepositoryException.class)
+    @Test
     public void testFailedLock1() throws Exception {
         doThrow(new Exception("Error")).when(mockCurator).createContainers(ZNODE_COORDINATION);
-        new MyResourceService(mockCurator, mockEventService, null);
+        assertThrows(RuntimeRepositoryException.class, () ->
+                new MyResourceService(mockCurator, mockEventService, null));
     }
 
     @Test
@@ -298,34 +307,35 @@ public class AbstractResourceServiceTest {
         verify(mockEventService, times(2)).emit(any(Notification.class));
     }
 
-    @Test(expected = RuntimeRepositoryException.class)
+    @Test
     public void testFailedLock4() throws Exception {
         doThrow(new Exception("Error")).when(mockLock).release();
         when(mockLock.acquire(any(Long.class), any(TimeUnit.class))).thenReturn(true);
         when(mockLock.isAcquiredInThisProcess()).thenReturn(true);
 
         final ResourceService svc = new MyResourceService(curator.getConnectString(), mockEventService, mockLock);
-        svc.purge(resource);
+        assertThrows(RuntimeRepositoryException.class, () -> svc.purge(resource));
     }
 
-    @Test(expected = RuntimeRepositoryException.class)
+    @Test
     public void testFailedLock5() throws Exception {
         doThrow(new Exception("Error")).when(mockLock).acquire(any(Long.class), any(TimeUnit.class));
 
         final ResourceService svc = new MyResourceService(curator.getConnectString(), mockEventService, mockLock);
-        svc.purge(resource);
+        assertThrows(RuntimeRepositoryException.class, () -> svc.purge(resource));
     }
 
-    @Test(expected = RuntimeRepositoryException.class)
+    @Test
     public void testFailedLock6() throws Exception {
         final ResourceService svc = new MyResourceService(curator.getConnectString(), mockEventService, mockLock);
-        svc.purge(resource);
+        assertThrows(RuntimeRepositoryException.class, () -> svc.purge(resource));
     }
 
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testInvalidPartition() {
-        new MyResourceService(singletonMap("bnode", "path/to/res"), curator.getConnectString());
+        assertThrows(IllegalArgumentException.class, () ->
+                new MyResourceService(singletonMap("bnode", "path/to/res"), curator.getConnectString()));
     }
 
     @Test

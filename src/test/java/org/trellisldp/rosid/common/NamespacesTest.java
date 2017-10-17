@@ -18,11 +18,13 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.curator.framework.CuratorFrameworkFactory.newClient;
 import static org.apache.curator.utils.ZKPaths.PATH_SEPARATOR;
 import static org.awaitility.Awaitility.await;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
+import static org.mockito.MockitoAnnotations.initMocks;
 import static org.trellisldp.rosid.common.RosidConstants.ZNODE_NAMESPACES;
 
 import java.net.URL;
@@ -37,12 +39,12 @@ import org.apache.curator.framework.recipes.cache.TreeCache;
 import org.apache.curator.framework.recipes.cache.TreeCacheListener;
 import org.apache.curator.retry.RetryNTimes;
 import org.apache.curator.test.TestingServer;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
 import org.trellisldp.api.NamespaceService;
 import org.trellisldp.api.RuntimeRepositoryException;
 import org.trellisldp.vocabulary.JSONLD;
@@ -51,7 +53,7 @@ import org.trellisldp.vocabulary.LDP;
 /**
  * @author acoburn
  */
-@RunWith(MockitoJUnitRunner.class)
+@RunWith(JUnitPlatform.class)
 public class NamespacesTest {
 
     private static final String nsDoc = "/testNamespaces.json";
@@ -72,13 +74,14 @@ public class NamespacesTest {
     @Mock
     private CreateBuilder2 mockCreateBuilder2;
 
-    @BeforeClass
+    @BeforeAll
     public static void setUp() throws Exception {
         curator = new TestingServer(true);
     }
 
-    @Before
+    @BeforeEach
     public void setUpMocks() throws Exception {
+        initMocks(this);
         when(mockCurator.create()).thenReturn(mockCreateBuilder);
         when(mockCreateBuilder.orSetData()).thenReturn(mockCreateBuilder2);
         when(mockCache.getListenable()).thenReturn(mockListenable);
@@ -115,10 +118,10 @@ public class NamespacesTest {
         assertFalse(svc3.setPrefix("jsonld", JSONLD.URI));
     }
 
-    @Test(expected = RuntimeRepositoryException.class)
+    @Test
     public void testErrorHandler() throws Exception {
         doThrow(RuntimeException.class).when(mockCache).getCurrentChildren(ZNODE_NAMESPACES);
-        new Namespaces(mockCurator, mockCache);
+        assertThrows(RuntimeRepositoryException.class, () -> new Namespaces(mockCurator, mockCache));
     }
 
     @Test

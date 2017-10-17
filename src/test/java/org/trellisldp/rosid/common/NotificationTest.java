@@ -15,9 +15,9 @@ package org.trellisldp.rosid.common;
 
 import static java.time.Instant.now;
 import static java.util.Optional.of;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.trellisldp.vocabulary.RDF.type;
 
 import java.time.Instant;
@@ -27,7 +27,9 @@ import org.apache.commons.rdf.api.Dataset;
 import org.apache.commons.rdf.api.IRI;
 import org.apache.commons.rdf.api.RDF;
 import org.apache.commons.rdf.jena.JenaRDF;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.platform.runner.JUnitPlatform;
+import org.junit.runner.RunWith;
 
 import org.trellisldp.vocabulary.AS;
 import org.trellisldp.vocabulary.LDP;
@@ -38,6 +40,7 @@ import org.trellisldp.vocabulary.Trellis;
 /**
  * @author acoburn
  */
+@RunWith(JUnitPlatform.class)
 public class NotificationTest {
 
     private static final RDF rdf = new JenaRDF();

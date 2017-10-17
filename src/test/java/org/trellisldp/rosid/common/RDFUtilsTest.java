@@ -17,9 +17,9 @@ import static java.time.Instant.now;
 import static java.util.Arrays.asList;
 import static java.util.Optional.of;
 import static java.util.stream.Collectors.toList;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.trellisldp.rosid.common.RDFUtils.endedAtQuad;
 import static org.trellisldp.rosid.common.RDFUtils.getParent;
 import static org.trellisldp.rosid.common.RDFUtils.hasObjectIRI;
@@ -38,11 +38,14 @@ import org.apache.commons.rdf.api.RDFTerm;
 import org.trellisldp.vocabulary.PROV;
 import org.trellisldp.vocabulary.Trellis;
 import org.trellisldp.vocabulary.XSD;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.platform.runner.JUnitPlatform;
+import org.junit.runner.RunWith;
 
 /**
  * @author acoburn
  */
+@RunWith(JUnitPlatform.class)
 public class RDFUtilsTest {
 
     private static final RDF rdf = getInstance();
