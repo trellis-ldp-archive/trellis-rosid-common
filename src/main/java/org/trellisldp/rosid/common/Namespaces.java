@@ -34,6 +34,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.curator.framework.CuratorFramework;
@@ -56,7 +57,7 @@ public class Namespaces implements NamespaceService {
 
     private final CuratorFramework client;
 
-    private Map<String, String> data = new HashMap<>();
+    private final Map<String, String> data = new ConcurrentHashMap<>();
 
     /**
      * Create a zookeeper-based namespace service
