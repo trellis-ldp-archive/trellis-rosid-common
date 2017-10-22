@@ -32,7 +32,7 @@ ext {
     /* Dependencies */
     trellisApiVersion = '0.3.0'
     trellisVocabularyVersion = '0.1.0'
-    commonsCodecVersion = '1.10'
+    commonsCodecVersion = '1.11'
     commonsIoVersion = '2.6'
     commonsRdfVersion = '0.3.0-incubating'
     curatorVersion = '4.0.0'
