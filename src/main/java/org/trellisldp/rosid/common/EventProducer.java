@@ -13,6 +13,7 @@
  */
 package org.trellisldp.rosid.common;
 
+import static java.util.Arrays.asList;
 import static java.util.Optional.empty;
 import static java.util.Optional.of;
 import static org.slf4j.LoggerFactory.getLogger;
@@ -33,6 +34,7 @@ import static org.trellisldp.vocabulary.LDP.PreferContainment;
 import static org.trellisldp.vocabulary.LDP.PreferMembership;
 import static org.trellisldp.vocabulary.LDP.contains;
 import static org.trellisldp.vocabulary.RDF.type;
+import static org.trellisldp.vocabulary.Trellis.PreferAccessControl;
 import static org.trellisldp.vocabulary.Trellis.PreferAudit;
 import static org.trellisldp.vocabulary.Trellis.PreferServerManaged;
 import static org.trellisldp.vocabulary.Trellis.PreferUserManaged;
@@ -66,6 +68,9 @@ class EventProducer {
     private static final Logger LOGGER = getLogger(EventProducer.class);
 
     private static final RDF rdf = getInstance();
+
+    private static final Set<IRI> graphsOfInterest = new HashSet<>(asList(
+                PreferAccessControl, PreferServerManaged, PreferUserManaged));
 
     private final Set<Quad> existing = new HashSet<>();
 
@@ -219,6 +224,7 @@ class EventProducer {
      */
     public Stream<Quad> getRemoved() {
         return existing.stream().filter(q -> !dataset.contains(q))
+            // exclude the server-managed modified triple
             .filter(q -> !q.getGraphName().equals(of(PreferServerManaged)) || !modified.equals(q.getPredicate()))
             .map(q -> (Quad) q);
     }
@@ -228,8 +234,7 @@ class EventProducer {
      * @param quads the quads
      */
     public void into(final Stream<? extends Quad> quads) {
-        quads.filter(q -> q.getGraphName().equals(of(PreferUserManaged)) ||
-                q.getGraphName().equals(of(PreferServerManaged)))
+        quads.filter(q -> q.getGraphName().filter(graphsOfInterest::contains).isPresent())
             .forEach(existing::add);
     }
 }
