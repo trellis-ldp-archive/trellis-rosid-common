@@ -49,6 +49,7 @@ public class Notification implements Event {
     private final IRI target;
     private final Dataset data;
     private final Instant created;
+    private final Set<IRI> graphsForTypes = new HashSet<>();
 
     /**
      * Create a new notification
@@ -60,6 +61,8 @@ public class Notification implements Event {
         this.data = data;
         this.identifier = rdf.createIRI("urn:uuid:" + randomUUID());
         this.created = now();
+        this.graphsForTypes.add(Trellis.PreferServerManaged);
+        this.graphsForTypes.add(Trellis.PreferUserManaged);
     }
 
     @Override
@@ -90,12 +93,7 @@ public class Notification implements Event {
 
     @Override
     public Collection<IRI> getTargetTypes() {
-        // TODO JDK 9 q.e.d.
-        final Set<IRI> graphs = new HashSet<>();
-        graphs.add(Trellis.PreferServerManaged);
-        graphs.add(Trellis.PreferUserManaged);
-
-        return data.stream().filter(quad -> quad.getGraphName().filter(graphs::contains).isPresent())
+        return data.stream().filter(quad -> quad.getGraphName().filter(graphsForTypes::contains).isPresent())
             .filter(quad -> quad.getPredicate().equals(type)).map(Quad::getObject)
             .filter(term -> term instanceof IRI).map(term -> (IRI) term).distinct().collect(toList());
     }
