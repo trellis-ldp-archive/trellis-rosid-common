@@ -123,7 +123,7 @@ class EventProducer {
     private ProducerRecord<String, String> buildContainmentMessage(final String topic, final IRI resource,
             final Resource parent, final Dataset dataset) throws Exception {
         try (final Dataset data = rdf.createDataset()) {
-            dataset.stream(of(PreferAudit), null, null, null).map(auditTypeMapper).forEach(data::add);
+            dataset.stream(of(PreferAudit), null, null, null).map(auditTypeMapper).forEachOrdered(data::add);
             data.add(PreferContainment, parent.getIdentifier(), contains, resource);
             return new ProducerRecord<>(topic, parent.getIdentifier().getIRIString(), serialize(data));
         }
@@ -143,13 +143,13 @@ class EventProducer {
                 parent.getMembershipResource().ifPresent(member ->
                     parent.getMemberRelation().ifPresent(relation ->
                         parent.getInsertedContentRelation().ifPresent(inserted ->
-                            dataset.stream(of(PreferUserManaged), null, inserted, null).forEach(q ->
+                            dataset.stream(of(PreferUserManaged), null, inserted, null).forEachOrdered(q ->
                                 data.add(rdf.createQuad(PreferMembership, member, relation, q.getObject()))))));
             }
             final Optional<String> key = data.stream(of(PreferMembership), null, null, null).map(Quad::getSubject)
                 .filter(x -> x instanceof IRI).map(x -> (IRI) x).map(IRI::getIRIString).findFirst();
             if (key.isPresent()) {
-                dataset.stream(of(PreferAudit), null, null, null).map(auditTypeMapper).forEach(data::add);
+                dataset.stream(of(PreferAudit), null, null, null).map(auditTypeMapper).forEachOrdered(data::add);
                 return of(new ProducerRecord<>(topic, key.get(), serialize(data)));
             }
             return empty();
@@ -235,6 +235,6 @@ class EventProducer {
      */
     public void into(final Stream<? extends Quad> quads) {
         quads.filter(q -> q.getGraphName().filter(graphsOfInterest::contains).isPresent())
-            .forEach(existing::add);
+            .forEachOrdered(existing::add);
     }
 }
