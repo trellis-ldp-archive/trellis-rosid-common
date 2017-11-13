@@ -137,7 +137,7 @@ public class Namespaces implements NamespaceService {
                 LOGGER.warn("Unable to read provided file: {}", ex.getMessage());
             }
         }
-        readTree(cache.getCurrentChildren(ZNODE_NAMESPACES)).forEachOrdered(namespaces::put);
+        readTree(cache.getCurrentChildren(ZNODE_NAMESPACES)).forEach(namespaces::put);
         return namespaces;
     }
 
