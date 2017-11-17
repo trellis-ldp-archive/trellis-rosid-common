@@ -13,9 +13,22 @@ addons:
     token:
       secure: "Z6AkWPDH07zetCYC94uVF/F8gxxVIpdrDDHGBhSV9rLcjQmpnsfSoVXlaMMzZrqMEVr+xxOnpEbcc/UpkwyWUbzqO5Gr6MqzVbuPkj2wY06limlhL5fm2UxNaJH8bJ896ni9pPIy6PBFQzUbrsXoqMYNL3AnQTGTi2knrY47r55WIGN1yhWanGNwxi1OpBr8rSyLg0tQPcIM83XKPVncyWPv6vwA7LNiQIu+0EKtT9MNagC9+TqP0hZsZf2XIBYsB1Fvm6/bmY/fm0tT+qH030Jb+sr3ORGf12eQqma72do6WlItC6ivNudUilfm4hqxyM3fUvExZUQNpaUjA/DbM9btuyFLPioXx1BEk4RncNsKpEGnyyFTLXO5t7j6Gg6V5jrJKAGeDq5CRl09IvpwbE2Erd2aeNssxPldMf7XVyAX1OMx9Ewpebnf+C9wXLVjQopQF4lpr6hajdiGizfZ5IaD1iuNT+hn20j5ae1erlbn3ZZSnhBkn8ry8C/xnQTu68jSAmKrEl/XkWXZOSqddxQ0HZsOt57xsksxd9EH1WK3iUfrUlfEcMv99mpnPCv6WoNPtopnOvrN3YWo9L1o2wZskhmvYX293YSkyfnB196oJOmtyd9Tonaap1RKFykCE/yib/lgHLmExjhw8KwBGuWLji32IFYFl39zFB9hMf0="
 
-jdk:
-  - oraclejdk8
-  - oraclejdk9
+matrix:
+  include:
+    # JDK 8
+    - jdk: oraclejdk8
+      env: JDK_RELEASE='JDK 1.8'
+
+    # JDK 9
+    - jdk: oraclejdk9
+      env: JDK_RELEASE='JDK 9'
+
+    # JDK 10
+    - env: JDK_RELEASE='JDK 10 Early-Access'
+      install: . ./src/install/install-jdk-10.sh
+
+  allow_failures:
+    - env: JDK_RELEASE='JDK 10 Early-Access'
 
 after_success:
   - ./gradlew jacocoTestReport coveralls sonarqube
