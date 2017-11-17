@@ -18,6 +18,7 @@ import static java.util.Optional.empty;
 import static java.util.Optional.of;
 import static org.slf4j.LoggerFactory.getLogger;
 import static org.trellisldp.api.RDFUtils.getInstance;
+import static org.trellisldp.api.RDFUtils.toDataset;
 import static org.trellisldp.rosid.common.RDFUtils.serialize;
 import static org.trellisldp.rosid.common.RosidConstants.TOPIC_CACHE;
 import static org.trellisldp.rosid.common.RosidConstants.TOPIC_LDP_CONTAINMENT_ADD;
@@ -122,8 +123,8 @@ class EventProducer {
 
     private ProducerRecord<String, String> buildContainmentMessage(final String topic, final IRI resource,
             final Resource parent, final Dataset dataset) throws Exception {
-        try (final Dataset data = rdf.createDataset()) {
-            dataset.stream(of(PreferAudit), null, null, null).map(auditTypeMapper).forEachOrdered(data::add);
+        try (final Dataset data = dataset.stream(of(PreferAudit), null, null, null).map(auditTypeMapper)
+                .collect(toDataset())) {
             data.add(PreferContainment, parent.getIdentifier(), contains, resource);
             return new ProducerRecord<>(topic, parent.getIdentifier().getIRIString(), serialize(data));
         }
@@ -143,7 +144,7 @@ class EventProducer {
                 parent.getMembershipResource().ifPresent(member ->
                     parent.getMemberRelation().ifPresent(relation ->
                         parent.getInsertedContentRelation().ifPresent(inserted ->
-                            dataset.stream(of(PreferUserManaged), null, inserted, null).forEachOrdered(q ->
+                            dataset.stream(of(PreferUserManaged), null, inserted, null).sequential().forEachOrdered(q ->
                                 data.add(rdf.createQuad(PreferMembership, member, relation, q.getObject()))))));
             }
             final Optional<String> key = data.stream(of(PreferMembership), null, null, null).map(Quad::getSubject)
