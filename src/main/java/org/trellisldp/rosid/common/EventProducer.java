@@ -16,9 +16,9 @@ package org.trellisldp.rosid.common;
 import static java.util.Arrays.asList;
 import static java.util.Optional.empty;
 import static java.util.Optional.of;
-import static java.util.stream.Collector.Characteristics.UNORDERED;
 import static org.slf4j.LoggerFactory.getLogger;
 import static org.trellisldp.api.RDFUtils.getInstance;
+import static org.trellisldp.api.RDFUtils.toDataset;
 import static org.trellisldp.rosid.common.RDFUtils.serialize;
 import static org.trellisldp.rosid.common.RosidConstants.TOPIC_CACHE;
 import static org.trellisldp.rosid.common.RosidConstants.TOPIC_LDP_CONTAINMENT_ADD;
@@ -49,7 +49,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.stream.Collector;
 import java.util.stream.Stream;
 
 import org.apache.commons.rdf.api.Dataset;
@@ -121,15 +120,6 @@ class EventProducer {
         }
         return q;
     };
-
-    // TODO -- remove this once using the 0.4 API
-    private static Collector<Quad, ?, Dataset> toDataset() {
-        return Collector.of(rdf::createDataset, Dataset::add, (left, right) -> {
-            right.iterate().forEach(left::add);
-            return left;
-        }, UNORDERED);
-    }
-
 
     private ProducerRecord<String, String> buildContainmentMessage(final String topic, final IRI resource,
             final Resource parent, final Dataset dataset) throws Exception {
