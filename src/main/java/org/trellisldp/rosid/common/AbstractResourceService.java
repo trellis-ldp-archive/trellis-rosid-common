@@ -20,9 +20,9 @@ import static java.util.Collections.unmodifiableList;
 import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
 import static java.util.Optional.of;
+import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.stream.Stream.concat;
-import static java.util.stream.Stream.empty;
 import static org.apache.commons.codec.digest.DigestUtils.md5Hex;
 import static org.apache.curator.utils.ZKPaths.PATH_SEPARATOR;
 import static org.slf4j.LoggerFactory.getLogger;
@@ -39,6 +39,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.Future;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -134,16 +135,16 @@ public abstract class AbstractResourceService implements ResourceService {
     protected abstract Stream<IRI> tryPurge(final IRI identifier);
 
     @Override
-    public Boolean put(final IRI identifier, final Dataset dataset) {
+    public Future<Boolean> put(final IRI identifier, final IRI ixnModel, final Dataset dataset) {
         final InterProcessLock lock = getLock(identifier);
 
         try {
             if (!lock.acquire(Long.parseLong(System.getProperty("zk.lock.wait.ms", "100")), MILLISECONDS)) {
-                return false;
+                return completedFuture(false);
             }
         } catch (final Exception ex) {
             LOGGER.error("Error acquiring resource lock: {}", ex.getMessage());
-            return false;
+            return completedFuture(false);
         }
 
         final Boolean status = tryWrite(identifier, dataset);
@@ -159,7 +160,7 @@ public abstract class AbstractResourceService implements ResourceService {
             notifications.emit(new Notification(toExternal(identifier, baseUrl).getIRIString(), dataset));
         }
 
-        return status;
+        return completedFuture(status);
     }
 
     @Override

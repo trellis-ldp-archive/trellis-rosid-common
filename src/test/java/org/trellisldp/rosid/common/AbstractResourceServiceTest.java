@@ -45,6 +45,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
@@ -219,41 +220,41 @@ public class AbstractResourceServiceTest {
     }
 
     @Test
-    public void testPutCreate() {
+    public void testPutCreate() throws InterruptedException, ExecutionException {
         final Dataset dataset = rdf.createDataset();
         dataset.add(rdf.createQuad(Trellis.PreferAudit, rdf.createBlankNode(), type, AS.Create));
 
         final ResourceService svc = new MyResourceService(curator.getConnectString(), null, null);
-        assertTrue(svc.put(resource, dataset));
-        assertFalse(svc.put(existing, dataset));
-        assertFalse(svc.put(unwritable, dataset));
+        assertTrue(svc.put(resource, null, dataset).get());
+        assertFalse(svc.put(existing, null, dataset).get());
+        assertFalse(svc.put(unwritable, null, dataset).get());
         verify(mockEventService, times(0)).emit(any(Notification.class));
     }
 
     @Test
-    public void testPutDelete() {
+    public void testPutDelete() throws InterruptedException, ExecutionException {
         final Dataset dataset = rdf.createDataset();
         dataset.add(rdf.createQuad(Trellis.PreferAudit, rdf.createBlankNode(), type, AS.Delete));
 
         final ResourceService svc = new MyResourceService(curator.getConnectString(), mockEventService, null);
-        assertFalse(svc.put(resource, dataset));
-        assertTrue(svc.put(existing, dataset));
-        assertFalse(svc.put(unwritable, dataset));
+        assertFalse(svc.put(resource, null, dataset).get());
+        assertTrue(svc.put(existing, null, dataset).get());
+        assertFalse(svc.put(unwritable, null, dataset).get());
         verify(mockEventService).emit(notificationCaptor.capture());
         assertEquals(of(rdf.createIRI("http://example.com/repository/existing")),
                 notificationCaptor.getValue().getTarget());
     }
 
     @Test
-    public void testPutUpdate() {
+    public void testPutUpdate() throws InterruptedException, ExecutionException {
         final Dataset dataset = rdf.createDataset();
         dataset.add(rdf.createQuad(Trellis.PreferAudit, rdf.createBlankNode(), type, AS.Update));
         dataset.add(rdf.createQuad(Trellis.PreferUserManaged, resource, DC.title, rdf.createLiteral("a title")));
 
         final ResourceService svc = new MyResourceService(curator.getConnectString(), mockEventService, null);
-        assertTrue(svc.put(resource, dataset));
-        assertTrue(svc.put(existing, dataset));
-        assertFalse(svc.put(unwritable, dataset));
+        assertTrue(svc.put(resource, null, dataset).get());
+        assertTrue(svc.put(existing, null, dataset).get());
+        assertFalse(svc.put(unwritable, null, dataset).get());
         verify(mockEventService, times(2)).emit(any(Notification.class));
     }
 
@@ -267,9 +268,9 @@ public class AbstractResourceServiceTest {
         dataset.add(rdf.createQuad(Trellis.PreferUserManaged, locked, DC.title, rdf.createLiteral("A title")));
 
         final ResourceService svc = new MyResourceService(curator.getConnectString(), mockEventService, null);
-        assertFalse(svc.put(locked, dataset));
-        assertTrue(svc.put(resource, dataset));
-        assertTrue(svc.put(existing, dataset));
+        assertFalse(svc.put(locked, null, dataset).get());
+        assertTrue(svc.put(resource, null, dataset).get());
+        assertTrue(svc.put(existing, null, dataset).get());
         verify(mockEventService, times(2)).emit(any(Notification.class));
     }
 
@@ -288,8 +289,8 @@ public class AbstractResourceServiceTest {
         dataset.add(rdf.createQuad(Trellis.PreferUserManaged, locked, DC.title, rdf.createLiteral("A title")));
 
         final ResourceService svc = new MyResourceService(curator.getConnectString(), mockEventService, mockLock);
-        assertFalse(svc.put(resource, dataset));
-        assertFalse(svc.put(existing, dataset));
+        assertFalse(svc.put(resource, null, dataset).get());
+        assertFalse(svc.put(existing, null, dataset).get());
         verify(mockEventService, times(0)).emit(any(Notification.class));
     }
 
@@ -302,8 +303,8 @@ public class AbstractResourceServiceTest {
         dataset.add(rdf.createQuad(Trellis.PreferUserManaged, locked, DC.title, rdf.createLiteral("A title")));
 
         final ResourceService svc = new MyResourceService(curator.getConnectString(), mockEventService, mockLock);
-        assertTrue(svc.put(resource, dataset));
-        assertTrue(svc.put(existing, dataset));
+        assertTrue(svc.put(resource, null, dataset).get());
+        assertTrue(svc.put(existing, null, dataset).get());
         verify(mockEventService, times(2)).emit(any(Notification.class));
     }
 
