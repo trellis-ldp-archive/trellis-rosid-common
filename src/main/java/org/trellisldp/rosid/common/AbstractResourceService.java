@@ -135,12 +135,13 @@ public abstract class AbstractResourceService implements ResourceService {
     protected abstract Stream<IRI> tryPurge(final IRI identifier);
 
     @Override
-    public Future<Boolean> put(IRI identifier, IRI ixnModel, Dataset dataset) {
+    public Future<Boolean> put(final IRI identifier, final IRI ixnModel, final Dataset dataset) {
         final InterProcessLock lock = getLock(identifier);
 
         try {
-            if (!lock.acquire(Long.parseLong(System.getProperty("zk.lock.wait.ms", "100")), MILLISECONDS))
+            if (!lock.acquire(Long.parseLong(System.getProperty("zk.lock.wait.ms", "100")), MILLISECONDS)) {
                 return new FutureTask<>(() -> false);
+            }
         } catch (final Exception ex) {
             LOGGER.error("Error acquiring resource lock: {}", ex.getMessage());
             return new FutureTask<>(() -> false);
