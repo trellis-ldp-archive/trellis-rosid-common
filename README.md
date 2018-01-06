@@ -1,6 +1,6 @@
 # trellis-rosid-common
 
-**NOTE**: this project has been migrated into the [Trellis/Rosid repository])https://github.com/trellis-ldp/trellis-rosid).
+**NOTE**: this project has been migrated into the [Trellis/Rosid repository](https://github.com/trellis-ldp/trellis-rosid).
 
 Common classes for Rosid-based implementations of the Trellis API. Rosid is based on a Kafka event bus and a
 (potentially distributed) common data store.
